@@ -32,6 +32,10 @@ curl -fsSL https://raw.githubusercontent.com/ayaan-cs/aco/main/scripts/install.s
 
 It detects the OS and CPU, downloads the matching archive from the [latest release](https://github.com/ayaan-cs/aco/releases/latest) (or `--version`), checks it against the release's `SHA256SUMS`, refuses to install on a mismatch, and puts `aco` in `~/.local/bin` (or `--dir` / `$ACO_INSTALL_DIR`). It tells you if that directory is not on your `PATH`. `--quiet` prints only the installed path; colour follows the terminal and `NO_COLOR`. Uninstall with `rm ~/.local/bin/aco` (cache: `~/.cache/aco`).
 
+![The install script installing the v0.1.0 release into a temporary directory](release-run/install.gif)
+
+<sub>A real recording ([install.tape](release-run/install.tape), [mp4](release-run/install.mp4), [still](release-run/still-install.png)): the published v0.1.0 release installed on a Debian 13 x86_64 machine without Docker, into `/tmp/aco-demo-install`.</sub>
+
 **Manual download.** Each [release](https://github.com/ayaan-cs/aco/releases) has `aco-<version>-<target>.tar.gz` for `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`, `x86_64-apple-darwin` and `aarch64-apple-darwin`, and a `SHA256SUMS` file:
 
 ```sh

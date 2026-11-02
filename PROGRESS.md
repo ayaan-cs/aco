@@ -55,8 +55,8 @@ given input only; the real-model run used a 1.5B model on CPU.
 - [x] macOS CI: macos-15 (arm64) and macos-15-intel build, clippy, tests; no-sandbox exit 3 asserted (macos-14 retired 2026-11-02, macos-13 earlier)
 - [x] Docker on macOS end to end: macos-15-intel + colima, isolation tests and a real bubble.py run (CI run 41485001743); fixed scratch dirs (~/.cache/aco/run) so colima can mount them
 - [x] release.yml: 4 targets, static musl, smoke tests, Docker bubble run on Linux, SHA256SUMS, notes from CHANGELOG; dry run 41480122973 green
-- [ ] CI green on the tagged commit
-- [ ] tag v0.1.0 pushed, release workflow green, assets published
-- [ ] install.sh against the real release (box; Ayaan's computer was offline) + unshare bubble.py run
-- [ ] cargo install --git --tag v0.1.0 into a temp root
-- [ ] install capture (vhs) + still in README
+- [x] CI green on the tagged commit 3f1e622 (run 41490077647; an earlier run on fc3c3a1 failed once in the set_output stress test, fixed by a larger fixture workload)
+- [x] tag v0.1.0 pushed, release workflow 41491554551 green, 4 archives + SHA256SUMS published
+- [x] install.sh against the real release (box; Ayaan's computer was offline): latest, pinned, quiet, ACO_INSTALL_DIR, bad version (exit 1); installed binary confirmed bubble.py 363x with unshare
+- [x] cargo install --git --tag v0.1.0 into a temp root (cargo 1.99.1; also --locked with 1.88)
+- [x] install capture (vhs) release-run/install.gif/.mp4 + still-install.png in README
