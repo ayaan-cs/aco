@@ -6,6 +6,10 @@ This is evolutionary search with a measured reward, not a trained policy.
 
 Repository: https://github.com/ayaan-cs/aco
 
+![aco's dashboard after optimising fixtures/bubble.py: 408.9x faster, confirmed](release-run/still-2-bubble-summary.png)
+
+A 47-second real terminal recording (bubble.py and lookup.py in the dashboard, then slower.py rejected in `--plain`) is at [release-run/demo.mp4](release-run/demo.mp4); its script is [release-run/demo.tape](release-run/demo.tape).
+
 ## How a run works
 
 ```mermaid
@@ -25,7 +29,7 @@ flowchart LR
 2. **Propose.** The default proposer is a set of deterministic AST rules: bubble sort becomes `sorted()`/`list.sort()`, string `+=` in a loop becomes list appends plus `"".join`, and membership tests against a list become a set built once. `--proposer ollama` asks a local OpenAI-compatible model for a full replacement file.
 3. **Measure.** A small harness inside the sandbox runs the candidate once as a warmup, then times `--reps` runs (default 5) with `perf_counter_ns`. Container or namespace startup is never timed. The score is the median.
 4. **Gate.** A candidate is kept only if its stdout matches the baseline (or a `--check` file) and its median is at least `--margin` (5%) under the current best. The best candidate becomes the elite, and the next generation is proposed from it.
-5. **Stop.** Stops at `--gens` (default 3), or earlier after `--patience` (default 1) generations without a new elite. `--pop` (default 4) is the population size, including the elite.
+5. **Stop.** Stops at `--gens` (default 3), or earlier after `--patience` (default 1) generations without a new elite. With the deterministic rules it also stops as soon as they have nothing new to offer for the current elite ("search exhausted"). `--pop` (default 4) is the population size, including the elite.
 6. **Confirm.** The elite and the baseline are re-measured alternately (B, C, B, C, ...) for `2 × reps` rounds in fresh sandboxes. If the elite no longer clears the margin, the baseline is reported as best and the report says why.
 
 Reward, used only to rank candidates that already passed the gate:
@@ -43,12 +47,16 @@ cargo build --release
 ./target/release/aco --plain fixtures/bubble.py fixtures/concat.py fixtures/lookup.py fixtures/slower.py
 ```
 
-- Without `--plain`, `aco` shows a live Ratatui dashboard with sparklines for best median time, peak RSS and tokens per generation, plus a candidate table. Press `q` to cancel, or to exit when the run is done. When stdout is not a terminal it prints plain lines.
+`aco --help` lists every option by group (Search, Proposer, Sandbox, Output) with examples and exit codes.
+
+- **Dashboard.** Without `--plain`, `aco` shows a live Ratatui dashboard: a header (file, sandbox, proposer, settings), a progress gauge (generation and candidate, then confirmation round), sparklines for best median, peak RSS and tokens per generation, a candidate table with kept/rejected status, and at the end a summary panel and a diff of the winner against the original. `↑`/`↓` scroll the table. `q` or Ctrl-C cancels a run (sandboxes are killed at once) and exits when it is done; pressing it again while cancelling forces the exit. Below 80×24 it shows a "terminal too small" notice until you resize. The terminal is restored on exit, cancel, SIGINT/SIGTERM and panic, and the summary is printed to the scrollback afterwards.
+- **Plain.** `--plain`, or any run whose stdout is not a terminal, prints aligned lines and the same end-of-run summary (with the diff). Colour follows `--color auto|always|never`; `auto` turns it off for pipes, `TERM=dumb` and a non-empty [`NO_COLOR`](https://no-color.org).
+- **Exit status.** 0 done, 1 a file failed in the sandbox (for example the original itself crashes or times out), 2 bad input or usage (missing, empty, non-UTF-8 or unparsable file, policy violation), 3 no sandbox available, 130 cancelled.
 - `--json` writes `<name>.report.json` next to `<name>.best.py` in `--out` (default `aco-out/`).
 - `--check expected.txt` compares candidates against a fixed expected stdout instead of the baseline's output.
 - `--sandbox auto|docker|unshare` (default `auto`: Docker if the daemon answers, else unshare on Linux, else exit with a message naming both).
 
-A real run of the four fixtures is in [release-run/](release-run/): the plain transcript, one JSON report per fixture, and [the bench table](release-run/bench.md).
+A real run of the four fixtures is in [release-run/](release-run/): the plain transcript, one JSON report per fixture, and [the bench table](release-run/bench.md). [release-run/VERIFY.md](release-run/VERIFY.md) is the end-to-end verification matrix (every fixture in the dashboard, `--plain` and `--json`, output equivalence, rejection, policy, sandbox limits, bad inputs, the model proposer, cancellation, resize, colour, and three repeats of each speedup), produced by [scripts/verify.py](scripts/verify.py).
 
 ## Sandboxes
 
@@ -81,9 +89,16 @@ Any server with `POST /v1/chat/completions` works, including llama.cpp's `llama-
 ```sh
 cargo test
 cargo clippy --all-targets -- -D warnings
+cargo fmt --check
 ```
 
-The isolation tests check that a host environment variable is absent, a host file is unreadable, network connects fail, and a spin loop is killed by the timeout. Docker cases skip with a message when no daemon is reachable, and unshare cases skip with the probe's reason when user namespaces are unavailable.
+The isolation tests check that a host environment variable is absent, a host file is unreadable, network connects fail, a spin loop is killed by the timeout, a 1 GiB allocation fails under a 256 MiB limit, and a cancel kills a running sandbox. Docker cases skip with a message when no daemon is reachable, and unshare cases skip with the probe's reason when user namespaces are unavailable. CI (Ubuntu 24.04) runs the Docker cases and an end-to-end Docker run; the unshare cases skip there because of the AppArmor user-namespace restriction. `tests/cli.rs` covers exit codes, diagnostics, colour and the JSON report through the binary, and `tests/tui.rs` renders the dashboard into a test backend at several sizes.
+
+End-to-end verification against the release build (needs `pip install pyte`):
+
+```sh
+cargo build --release && python3 scripts/verify.py
+```
 
 ## License
 

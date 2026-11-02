@@ -22,3 +22,9 @@
 - Release run: release-run/transcript.txt, release-run/bench.md, release-run/bench.json, per-fixture *.report.json and *.best.py.
 - Remaining for the parent: push to https://github.com/ayaan-cs/aco (needs a token), then step 8 (portfolio sheet) in the portfolio repo using release-run/bench.md.
 - Unverified here: the Docker runner (CI on ubuntu-latest has Docker and will exercise it; unshare cases will likely skip there because of Ubuntu's AppArmor userns restriction).
+
+## UX and verification pass (2026-11-02)
+- CI: first Docker run on ubuntu-latest found a test bug (a container's own /etc/hostname was treated as a host leak) and an over-strict fixture-size assert (concat.py is ~47 ms on the image's CPython 3.12). Both fixed; CI now also runs fmt, prints sandbox skips, and does an end-to-end Docker run.
+- UX: grouped `--help` with examples and exit codes; located diagnostics for missing/empty/binary/unparsable/policy-violating files and for no sandbox; coloured, aligned `--plain` honouring NO_COLOR/--color/TTY; dashboard with header, progress gauge, sparklines, candidate table, summary panel and winner diff, scroll, too-small notice; signal-safe cancel that kills in-flight sandboxes; summary left in scrollback.
+- Verification: scripts/verify.py drives the release binary (dashboard in a pty via pyte); results in release-run/VERIFY.md and release-run/verify/results.json.
+- Demo: release-run/demo.mp4 (vhs, 1600x960), tape release-run/demo.tape, stills release-run/still-*.png.
