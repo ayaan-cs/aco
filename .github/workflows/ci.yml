@@ -112,15 +112,16 @@ jobs:
         timeout-minutes: 15
         run: |
           brew install colima docker
-          colima start --cpu 2 --memory 4
+          colima start --cpu 2 --memory 4 --dns 1.1.1.1 --dns 8.8.8.8
           docker version
       - name: container start-up time (informational)
         run: |
-          docker pull -q python:3.12-slim
+          for i in 1 2 3; do docker pull -q python:3.12-slim && break; sleep 10; done
           for i in 1 2 3; do /usr/bin/time -p docker run --rm python:3.12-slim python -c 1; done
       - name: Docker sandbox tests
         env:
           ACO_TEST_TIMEOUT_SECS: "60"
+          ACO_REQUIRE_DOCKER: "1"
         run: cargo test --locked --test sandbox -- --nocapture docker
       - name: end-to-end (docker sandbox)
         run: cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out fixtures/bubble.py

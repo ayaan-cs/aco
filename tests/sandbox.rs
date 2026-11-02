@@ -39,6 +39,10 @@ fn docker() -> Option<DockerRunner> {
     match d.probe() {
         Ok(()) => Some(d),
         Err(e) => {
+            // CI jobs that set up Docker on purpose must not pass by skipping.
+            if std::env::var_os("ACO_REQUIRE_DOCKER").is_some() {
+                panic!("ACO_REQUIRE_DOCKER is set but docker is unavailable: {e}");
+            }
             eprintln!("SKIP docker isolation test: {e}");
             None
         }
