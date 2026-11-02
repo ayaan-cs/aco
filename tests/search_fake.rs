@@ -25,6 +25,7 @@ fn keeps_and_confirms_a_faster_variant_and_stops_early() {
     .unwrap();
     assert!(r.best.confirmed);
     assert_eq!(r.best.origin, "rule:bubble-sort:sorted");
+    assert!(!r.best.model_rewrite, "rule rewrites need no review flag");
     // Generation 1 finds it; generation 2 has nothing new for the deterministic
     // rules, so the search is exhausted before gen 3.
     assert_eq!(r.generations.len(), 2);
@@ -285,4 +286,52 @@ fn policy_violating_input_never_runs() {
     .unwrap_err();
     assert!(err.contains("banned module `os`"));
     assert!(runner.seen.lock().unwrap().is_empty());
+}
+
+/// A proposer that returns one fixed rewrite labelled as a model's.
+struct ModelLike;
+
+impl aco::propose::Proposer for ModelLike {
+    fn name(&self) -> String {
+        "model:test".into()
+    }
+    fn propose(&self, source: &str) -> Vec<aco::propose::Candidate> {
+        vec![aco::propose::Candidate {
+            source: source.replace("out = bubble(data)", "out = sorted(data)"),
+            origin: "model:test#0".into(),
+            tokens: 10,
+        }]
+    }
+    fn deterministic(&self) -> bool {
+        true
+    }
+}
+
+#[test]
+fn a_confirmed_model_rewrite_is_flagged_for_review() {
+    let runner = FakeRunner::new(100_000_000, vec![("sorted(data)", 2_000_000, "same")]);
+    let mut notes = Vec::new();
+    let r = optimize(
+        "bubble.py",
+        BUBBLE,
+        &ModelLike,
+        &runner,
+        &Config::default(),
+        None,
+        &no_cancel(),
+        &mut |e| {
+            if let Event::Note(n) = e {
+                notes.push(n)
+            }
+        },
+    )
+    .unwrap();
+    assert!(r.best.confirmed, "{:?}", r.best);
+    assert!(r.best.model_rewrite);
+    assert!(
+        notes
+            .iter()
+            .any(|n| n.contains("not that it is equivalent for every input")),
+        "{notes:?}"
+    );
 }

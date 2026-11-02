@@ -36,9 +36,10 @@
 - [x] Inputs: `--stdin`, args after `--`, `sys` subset, encodings (BOM/CRLF/tabs kept, non-UTF-8 refused), too-fast floor (1 ms)
 - [x] Stress fixtures (scripts/gen_stress.py) and tests/stress.rs
 - [x] TUI hang-up bug: closing the terminal left aco spinning at 100% CPU (crossterm EOF loop); fixed + tests/hangup.rs
-- [ ] Real local model run (llama.cpp + Qwen2.5-Coder-1.5B)
-- [ ] CI: Docker end-to-end for numpy_project and project --mutate; gen_stress reproducibility
-- [ ] verify.py / VERIFY.md rows; bench.md and transcript.txt refresh
+- [x] Real local model run (llama.cpp b12034 + Qwen2.5-Coder-1.5B Q4_K_M): verify.py `model` rows; a confirmed model winner is now flagged for review
+- [x] CI: Docker end-to-end for numpy_project (+ cache reuse), project --mutate, large_3000; gen_stress reproducibility (pushed; check the run)
+- [x] verify.py stress/model/hang-up rows (36 stress rows pass)
+- [ ] Full verify run → VERIFY.md; bench.md and transcript.txt refresh
 - [ ] README, SECURITY.md
 - [ ] Re-record demo (header changed)
 - [ ] Push, green CI

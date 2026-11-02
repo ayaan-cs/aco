@@ -1,0 +1,222 @@
+{
+  "version": "aco 0.1.0",
+  "python": "Python 3.13.5",
+  "results": [
+    {
+      "row": "large file",
+      "name": "large_300.py (300 lines)",
+      "pass": true,
+      "detail": "confirmed 22.7x (62.3 ms \u2192 2.7 ms); 7 candidates; parse 0.6 ms, policy 0.2 ms, rewrite rules 16 ms, search 2.2 s; wall 2.2 s; best.py stdout identical: True"
+    },
+    {
+      "row": "large file",
+      "name": "large_1000.py (1000 lines)",
+      "pass": true,
+      "detail": "confirmed 18.3x (56.5 ms \u2192 3.1 ms); 7 candidates; parse 1.8 ms, policy 0.5 ms, rewrite rules 47 ms, search 2.2 s; wall 2.3 s; best.py stdout identical: True"
+    },
+    {
+      "row": "large file",
+      "name": "large_3000.py (3000 lines)",
+      "pass": true,
+      "detail": "confirmed 21.8x (55.6 ms \u2192 2.5 ms); 7 candidates; parse 4.9 ms, policy 1.5 ms, rewrite rules 132 ms, search 2.6 s; wall 2.7 s; best.py stdout identical: True"
+    },
+    {
+      "row": "project",
+      "name": "main.py imports 5 local modules (package, relative imports)",
+      "pass": true,
+      "detail": "6 files copied in (main.py, helpers.py, shop/__init__.py, shop/inventory.py, shop/pricing.py, shop/util.py); note: the rules find nothing to rewrite in main.py, but they do in shop/inventory.py; only one file is rewritten per run, so t"
+    },
+    {
+      "row": "project",
+      "name": "--mutate shop/inventory.py",
+      "pass": true,
+      "detail": "confirmed 21.5x (52.8 ms \u2192 2.5 ms); project stdout with inventory.best.py dropped in identical: True; source files unchanged: True"
+    },
+    {
+      "row": "project",
+      "name": "generated project: 400 modules (20 import chains of 20), hot spot in pkg/m210.py",
+      "pass": true,
+      "detail": "402 files; import analysis 6 ms; confirmed 10.4x (237.0 ms \u2192 22.8 ms); wall 4.8 s"
+    },
+    {
+      "row": "project",
+      "name": "1003-module closure is refused (cap 1000 files)",
+      "pass": true,
+      "detail": "exit 2: error: the project is too large for the sandbox: the target imports more than 1000 local files or 20 MB of source. Point --project-root at a smaller directory, or move generated or vendored code out of it"
+    },
+    {
+      "row": "stdlib",
+      "name": "stdlib_heavy.py (collections, itertools, heapq, re, json, dataclasses \u2026)",
+      "pass": true,
+      "detail": "exit 0; original kept; baseline 37.7 ms"
+    },
+    {
+      "row": "packages",
+      "name": "numpy_project (numpy + more-itertools), fresh cache",
+      "pass": true,
+      "detail": "confirmed 44.1x (196.5 ms \u2192 4.5 ms); installed more-itertools 10.5.0, numpy 2.3.4; install 1.0 s (outside the timed runs); wall 5.9 s"
+    },
+    {
+      "row": "packages",
+      "name": "numpy_project rerun reuses the cache",
+      "pass": true,
+      "detail": "deps step 11 ms; confirmed 45.9x (195.6 ms \u2192 4.3 ms)"
+    },
+    {
+      "row": "packages",
+      "name": "import of an undeclared package",
+      "pass": true,
+      "detail": "exit 2: error: missing_dep.py:1: imports `yaml`, which is not in the standard library, the project, or the installed requirements. Add `PyYAML` to a requirements.txt next to the script (or pass --requirements FILE)"
+    },
+    {
+      "row": "packages",
+      "name": "requirements.txt with a pip option (-e git+\u2026)",
+      "pass": true,
+      "detail": "exit 2: error: requirements: /workspace/aco/fixtures/stress/bad_requirements/requirements.txt:2: `-e git+https://example.com/repo.git#egg=thing`: pip options are not supported (aco installs plain PyPI requirements as wheels only"
+    },
+    {
+      "row": "packages",
+      "name": "package with no wheel (pycairo 1.20.0, sdist only)",
+      "pass": true,
+      "detail": "exit 2: error: could not install requirements from /tmp/aco-nowheel-r01igo6o/requirements.txt: `pycairo==1.20.0` has no installable wheel for this interpreter (3.13.5 cpython-313 linux-x86_64). aco installs wheels only (`--only-"
+    },
+    {
+      "row": "semantics trap",
+      "name": "alias_set.py: list mutated through an alias after the loop",
+      "pass": true,
+      "detail": "no rewrite proposed (rule refuses statically); 0 candidates; original kept (at 454c873 the rule fired and only the output check caught it)"
+    },
+    {
+      "row": "semantics trap",
+      "name": "global_mutation.py: list mutated by a function through `global`",
+      "pass": true,
+      "detail": "no rewrite proposed (rule refuses statically); 0 candidates; original kept (at 454c873 the rule fired and only the output check caught it)"
+    },
+    {
+      "row": "semantics trap",
+      "name": "partial_bubble.py: bubble loop that stops early (not a full sort)",
+      "pass": true,
+      "detail": "no rewrite proposed (rule refuses statically); 0 candidates; original kept (at 454c873 the rule fired and only the output check caught it)"
+    },
+    {
+      "row": "semantics trap",
+      "name": "loopvar_bubble.py: loop variable read after the sort",
+      "pass": true,
+      "detail": "no rewrite proposed (rule refuses statically); 0 candidates; original kept (at 454c873 the rule fired and only the output check caught it)"
+    },
+    {
+      "row": "semantics trap",
+      "name": "duplicates_order.py: order-preserving dedup keeps order",
+      "pass": true,
+      "detail": "confirmed 141.5x (89.9 ms \u2192 635.3 \u00b5s); best.py stdout identical: True"
+    },
+    {
+      "row": "semantics trap",
+      "name": "set_output.py prints a set (hash-order output)",
+      "pass": true,
+      "detail": "confirmed 1.6x (11.9 ms \u2192 7.6 ms); baseline and candidate share each round's PYTHONHASHSEED, so a correct rewrite is accepted (at 454c873 random per-process seeds rejected it as 'output differs')"
+    },
+    {
+      "row": "semantics trap",
+      "name": "hashseed.py: list(set(\u2026)) matches only under seed 0",
+      "pass": true,
+      "detail": "passed the search (seed 0) at 10x, then confirmation: output differed from the original with PYTHONHASHSEED=1 (it depends on hash or iteration order)"
+    },
+    {
+      "row": "stdin/argv",
+      "name": "count_words.py --stdin input.txt -- 40",
+      "pass": true,
+      "detail": "original kept; best.py stdout, stderr and exit code identical with the same stdin/args: True"
+    },
+    {
+      "row": "stdin/argv",
+      "name": "count_words.py exiting with status 3",
+      "pass": true,
+      "detail": "baseline exit code 3 recorded and required of candidates; confirmed 1.1x (25.8 ms \u2192 23.4 ms)"
+    },
+    {
+      "row": "nondeterminism",
+      "name": "unseeded_random.py",
+      "pass": true,
+      "detail": "exit 1: error: fixtures/stress/io/unseeded_random.py: baseline failed in the sandbox: nondeterministic output: stdout, stderr or the exit code differed between repetitions of the same code (printing random nu"
+    },
+    {
+      "row": "nondeterminism",
+      "name": "prints_time.py",
+      "pass": true,
+      "detail": "exit 1: error: fixtures/stress/io/prints_time.py: baseline failed in the sandbox: nondeterministic output: stdout, stderr or the exit code differed between repetitions of the same code (printing random number"
+    },
+    {
+      "row": "nondeterminism",
+      "name": "seeded_random.py (deterministic output)",
+      "pass": true,
+      "detail": "confirmed 202.4x (106.8 ms \u2192 527.6 \u00b5s)"
+    },
+    {
+      "row": "nondeterminism",
+      "name": "timing_internal.py (deterministic output)",
+      "pass": true,
+      "detail": "confirmed 3.2x (8.0 ms \u2192 2.5 ms)"
+    },
+    {
+      "row": "encoding",
+      "name": "crlf.py",
+      "pass": true,
+      "detail": "confirmed 1182.1x (144.6 ms \u2192 122.4 \u00b5s); best.py keeps the CRLF line endings: True"
+    },
+    {
+      "row": "encoding",
+      "name": "bom.py",
+      "pass": true,
+      "detail": "confirmed 1118.4x (144.2 ms \u2192 128.9 \u00b5s); best.py keeps the BOM mark: True"
+    },
+    {
+      "row": "encoding",
+      "name": "tabs.py",
+      "pass": true,
+      "detail": "confirmed 597.0x (80.0 ms \u2192 134.1 \u00b5s); best.py keeps the tab indentation: True"
+    },
+    {
+      "row": "encoding",
+      "name": "unicode_names.py (non-ASCII identifiers and strings)",
+      "pass": true,
+      "detail": "confirmed 2.9x (2.9 ms \u2192 1.0 ms)"
+    },
+    {
+      "row": "encoding",
+      "name": "latin1.py refused with a fix",
+      "pass": true,
+      "detail": "exit 2: error: `fixtures/stress/encoding/latin1.py` cannot be read as Python source: it is not UTF-8 text (byte 0xE9 on line 1). If it is Latin-1 or cp1252, convert it with `iconv -f cp1252 -t utf-8 FILE > FI"
+    },
+    {
+      "row": "encoding",
+      "name": "declared_latin1.py refused with a fix",
+      "pass": true,
+      "detail": "exit 2: error: `fixtures/stress/encoding/declared_latin1.py` cannot be read as Python source: it declares `coding: latin-1`; aco only reads UTF-8 source. Convert it with `iconv -f latin-1 -t utf-8 FILE > FILE"
+    },
+    {
+      "row": "syntax",
+      "name": "pep701.py (3.12 f-string quote reuse)",
+      "pass": true,
+      "detail": "exit 2: error: `fixtures/stress/syntax/pep701.py` uses Python syntax aco cannot parse yet (line 2: f-string: expecting '}')"
+    },
+    {
+      "row": "syntax",
+      "name": "pep695.py parses and runs",
+      "pass": true,
+      "detail": "exit 0; baseline 2.7 \u00b5s; original kept"
+    },
+    {
+      "row": "syntax",
+      "name": "match_stmt.py parses and runs",
+      "pass": true,
+      "detail": "exit 0; baseline 2.7 ms; confirmed 1.4x (2.7 ms \u2192 1.9 ms)"
+    },
+    {
+      "row": "too fast",
+      "name": "tiny.py",
+      "pass": true,
+      "detail": "baseline 2.1 \u00b5s; stop: too fast to measure: baseline median 2.1 \u00b5s is under 1.000 ms"
+    }
+  ]
+}

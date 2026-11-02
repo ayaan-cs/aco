@@ -500,6 +500,13 @@ pub fn summary_lines(p: &Paint, s: &Summary, with_diff: bool) -> Vec<String> {
             pad(&dur(s.best_ns), 9),
             s.best_origin
         ));
+        if s.review {
+            v.push(format!(
+                "    {} {}",
+                label("review"),
+                p.yellow("includes a model rewrite, checked on this input only: read the diff")
+            ));
+        }
     } else {
         v.push(format!(
             "  {} {}  no faster version found, original kept",

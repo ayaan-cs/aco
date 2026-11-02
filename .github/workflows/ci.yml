@@ -17,6 +17,8 @@ jobs:
           components: clippy, rustfmt
       - name: cargo fmt
         run: cargo fmt --check
+      - name: stress fixtures are reproducible
+        run: python3 scripts/gen_stress.py && git diff --exit-code fixtures/stress
       - name: cargo clippy
         run: cargo clippy --locked --all-targets -- -D warnings
       # --nocapture so the log shows which sandbox suites ran and which skipped.
@@ -28,3 +30,13 @@ jobs:
           sysctl kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true
       - name: end-to-end (docker sandbox)
         run: cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out --json fixtures/lookup.py fixtures/slower.py
+      - name: end-to-end, multi-file project (docker sandbox)
+        run: cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out --json --mutate fixtures/stress/project/shop/inventory.py fixtures/stress/project/main.py
+      - name: end-to-end, third-party packages (docker sandbox)
+        run: |
+          cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out --json fixtures/stress/numpy_project/stats.py
+          # The second run must reuse the derived image.
+          cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out fixtures/stress/numpy_project/stats.py 2>&1 | tee rerun.txt
+          grep -q "using cached packages" rerun.txt
+      - name: end-to-end, 3000-line file (docker sandbox)
+        run: cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out --json fixtures/stress/large_3000.py

@@ -569,6 +569,15 @@ fn draw_summary(f: &mut Frame, area: Rect, s: &Summary) {
             key("winner"),
             Span::raw(s.best_origin.clone()),
         ]));
+        if s.review {
+            lines.push(Line::from(vec![
+                key("review"),
+                Span::styled(
+                    "model rewrite, checked on this input only",
+                    Style::new().fg(Color::Yellow),
+                ),
+            ]));
+        }
     } else {
         lines.push(Line::from(Span::styled(
             "– no faster version, original kept",

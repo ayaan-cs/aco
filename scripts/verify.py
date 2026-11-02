@@ -6,8 +6,12 @@ Runs the real binary on the fixtures (live dashboard in a pseudo-terminal,
 the model proposer against mock and unreachable endpoints, and repeats the
 confirmed speedups. Writes release-run/verify/results.json and artefacts.
 
-Usage: python3 scripts/verify.py   (after `cargo build --release`)
-Needs: python3, pyte (pip install pyte) for the terminal checks.
+Usage: python3 scripts/verify.py [core] [stress] [model]
+       (after `cargo build --release`; no argument runs core and stress)
+       `model` runs the search against a real local model; set ACO_VERIFY_ENDPOINT
+       (an OpenAI-compatible server, e.g. llama.cpp) and ACO_VERIFY_MODEL.
+Needs: python3, pyte (pip install pyte) for the terminal checks, network access
+for the package-install rows.
 """
 import fcntl
 import http.server
@@ -214,7 +218,22 @@ def main():
     version = subprocess.run([str(BIN), "--version"], capture_output=True, text=True).stdout.strip()
     py = subprocess.run(["python3", "--version"], capture_output=True, text=True).stdout.strip()
     print(version, py, flush=True)
+    want = set(sys.argv[1:]) or {"core", "stress"}
+    if "core" in want:
+        core()
+    if "stress" in want:
+        stress()
+    if "model" in want:
+        real_model()
 
+    name = "results.json" if want >= {"core", "stress"} else f"results-{'-'.join(sorted(want))}.json"
+    (OUT / name).write_text(json.dumps({"version": version, "python": py, "results": results}, indent=2) + "\n")
+    failed = [r for r in results if not r["pass"]]
+    print(f"\n{len(results) - len(failed)}/{len(results)} passed", flush=True)
+    sys.exit(1 if failed else 0)
+
+
+def core():
     # 1. Every fixture through the live dashboard (with --json).
     for name in FIX:
         tui_fixture(name, OUT / "tui")
@@ -292,7 +311,7 @@ def main():
         ("empty file", [str(bad / "empty.py")], 2, "has no code to optimise"),
         ("comments only", [str(bad / "comments.py")], 2, "has no code to optimise"),
         ("non-Python text", ["README.md"], 2, "is not valid Python"),
-        ("binary file", [str(bad / "blob.py")], 2, "is not UTF-8 text"),
+        ("binary file", [str(bad / "blob.py")], 2, "contains NUL bytes"),
         ("directory", ["fixtures"], 2, "is a directory"),
         ("policy: import os", [str(bad / "p_os.py")], 2, "banned module `os`"),
         ("policy: subprocess", [str(bad / "p_sub.py")], 2, "banned module `subprocess`"),
@@ -459,10 +478,290 @@ def main():
     record("colour", "NO_COLOR=1 on a TTY", nocolor, "no escape codes at all")
     record("colour", "stdout piped (no --plain)", piped, "falls back to line output, no escape codes")
 
-    (OUT / "results.json").write_text(json.dumps({"version": version, "python": py, "results": results}, indent=2) + "\n")
-    failed = [r for r in results if not r["pass"]]
-    print(f"\n{len(results) - len(failed)}/{len(results)} passed", flush=True)
-    sys.exit(1 if failed else 0)
+    # Closing the terminal while the dashboard waits for q (window closed,
+    # ssh dropped). At 454c873 aco spun at 100% CPU here forever.
+    for label, ctty in [("controlling terminal closed after the run (SIGHUP)", True),
+                        ("stdin/stdout terminal closed, no SIGHUP", False)]:
+        m, sl = os.openpty()
+        fcntl.ioctl(sl, termios.TIOCSWINSZ, struct.pack("HHHH", 36, 120, 0, 0))
+
+        def mk():
+            os.setsid()
+            fcntl.ioctl(0, termios.TIOCSCTTY, 0)
+        env = dict(os.environ, TERM="xterm-256color")
+        p = subprocess.Popen([str(BIN), "--out", str(OUT / "hangup"), "fixtures/lookup.py"], stdin=sl, stdout=sl,
+                             stderr=subprocess.DEVNULL, cwd=ROOT, env=env,
+                             preexec_fn=mk if ctty else None, start_new_session=not ctty)
+        os.close(sl)
+        seen, end = b"", time.time() + 180
+        while time.time() < end and b"q quit" not in seen:
+            r, _, _ = select.select([m], [], [], 0.2)
+            if r:
+                try:
+                    seen = (seen + os.read(m, 65536))[-100000:]
+                except OSError:
+                    break
+        done = b"q quit" in seen
+        os.close(m)
+        t0 = time.time()
+        try:
+            code = p.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            code = None
+            p.kill()
+            p.wait()
+        secs = time.time() - t0
+        left = leftovers()
+        record("hang-up", label, done and code == 130 and not left,
+               (f"exited {secs:.2f}s after the terminal closed (exit {code}); leftover sandbox processes: {len(left)}"
+                if code is not None else "STILL RUNNING 5s after the terminal closed"))
+
+
+# ----------------------------------------------------------- stress pass
+
+S = "fixtures/stress"
+
+
+def plain(label_out, args, reps=3, env=None, timeout=900):
+    """Run --plain --json; return (proc, report or None, seconds)."""
+    out = OUT / "stress" / label_out
+    e = dict(os.environ)
+    e.setdefault("ACO_CACHE_DIR", str(OUT / "cache"))
+    if env:
+        e.update(env)
+    t = time.time()
+    p = subprocess.run([str(BIN), "--plain", "--color", "never", "--json", "--reps", str(reps), "--out", str(out), *args],
+                       capture_output=True, text=True, cwd=ROOT, env=e, timeout=timeout)
+    secs = time.time() - t
+    (OUT / "stress" / f"{label_out}.txt").write_text(p.stdout + p.stderr)
+    reports = sorted(out.glob("*.report.json")) if out.exists() else []
+    newest = max(reports, key=lambda x: x.stat().st_mtime) if reports else None
+    v = json.loads(newest.read_text()) if newest and newest.stat().st_mtime >= t - 1 else None
+    return p, v, secs
+
+
+def first_error(p):
+    return next((l for l in (p.stderr + p.stdout).splitlines() if l.startswith("error")), "")[:220]
+
+
+def outcome(v):
+    b = v["best"]
+    return (f"confirmed {b['speedup']:.1f}x ({fmt_ns(v['confirmation']['baseline_median_ns'])} → "
+            f"{fmt_ns(v['confirmation']['candidate_median_ns'])})" if b["confirmed"] else "original kept")
+
+
+def fmt_ns(ns):
+    return f"{ns / 1e6:.1f} ms" if ns >= 1e6 else f"{ns / 1e3:.1f} µs"
+
+
+def stdout_of(script, cwd=None, stdin=None, args=()):
+    r = subprocess.run([sys.executable, str(script), *args], capture_output=True, cwd=cwd, timeout=600,
+                       input=stdin)
+    return r.returncode, r.stdout, r.stderr
+
+
+def stress():
+    (OUT / "stress").mkdir(parents=True, exist_ok=True)
+
+    # Large single files: the same hot spots repeated through 300-3000 lines.
+    for n in (300, 1000, 3000):
+        p, v, secs = plain(f"large_{n}", [f"{S}/large_{n}.py"])
+        t = v["timings"] if v else {}
+        same = v and stdout_of(ROOT / f"{S}/large_{n}.py")[1] == stdout_of(OUT / f"stress/large_{n}/large_{n}.best.py")[1]
+        ok = p.returncode == 0 and v and v["best"]["confirmed"] and same
+        record("large file", f"large_{n}.py ({n} lines)", ok,
+               f"{outcome(v)}; {len(v['candidates'])} candidates; parse {t['parse_ns']/1e6:.1f} ms, "
+               f"policy {t['policy_ns']/1e6:.1f} ms, rewrite rules {t['propose_ns']/1e6:.0f} ms, "
+               f"search {t['search_ns']/1e9:.1f} s; wall {secs:.1f} s; best.py stdout identical: {bool(same)}")
+
+    # Multi-file project.
+    p, v, _ = plain("project", [f"{S}/project/main.py"])
+    files = [f["path"] for f in v["run"]["files"]] if v else []
+    ok = p.returncode == 0 and len(files) == 6 and any("--mutate" in n and "shop/inventory.py" in n for n in v["notes"])
+    record("project", "main.py imports 5 local modules (package, relative imports)", ok,
+           f"{len(files)} files copied in ({', '.join(files)}); note: {v['notes'][0][:120] if v and v['notes'] else '-'}")
+    p, v, _ = plain("project-mutate", ["--mutate", f"{S}/project/shop/inventory.py", f"{S}/project/main.py"])
+    best = OUT / "stress/project-mutate/inventory.best.py"
+    # Run the project with the rewritten module dropped in, outside aco.
+    import shutil, tempfile
+    with tempfile.TemporaryDirectory() as d:
+        shutil.copytree(ROOT / f"{S}/project", Path(d) / "p")
+        before = stdout_of(Path(d) / "p/main.py", cwd=Path(d) / "p")[1]
+        shutil.copy(best, Path(d) / "p/shop/inventory.py")
+        after = stdout_of(Path(d) / "p/main.py", cwd=Path(d) / "p")[1]
+    untouched = subprocess.run(["git", "diff", "--quiet", "--", f"{S}/project"], cwd=ROOT).returncode == 0
+    ok = p.returncode == 0 and v["best"]["confirmed"] and before == after and untouched
+    record("project", "--mutate shop/inventory.py", ok,
+           f"{outcome(v)}; project stdout with inventory.best.py dropped in identical: {before == after}; "
+           f"source files unchanged: {untouched}")
+
+    # A generated 400-module project: analysis cost and caps. 20 chains of 20
+    # modules each (a chain of 400 nested imports overflows CPython's own stack).
+    import tempfile
+    big = Path(tempfile.mkdtemp(prefix="aco-big-"))
+    (big / "pkg").mkdir()
+    (big / "pkg/__init__.py").write_text("")
+    for c in range(20):
+        for k in range(20):
+            i = c * 20 + k
+            nxt = f"from pkg import m{i + 1}\n" if k < 19 else ""
+            body = "def f(x):\n    return x + 1\n" if i != 210 else (
+                "def f(x):\n    allowed = [i * 3 for i in range(3000)]\n    hits = 0\n"
+                "    for k in range(20000):\n        if k in allowed:\n            hits += 1\n    return x + hits\n")
+            (big / f"pkg/m{i}.py").write_text(nxt + body)
+    (big / "main.py").write_text("".join(f"from pkg import m{c * 20}\n" for c in range(20))
+                                 + "from pkg import m210\nprint(m0.f(1), m210.f(0))\n")
+    p, v, secs = plain("big-project", ["--mutate", str(big / "pkg/m210.py"), str(big / "main.py")])
+    ok = p.returncode == 0 and v and len(v["run"]["files"]) == 402 and v["best"]["confirmed"]
+    record("project", "generated project: 400 modules (20 import chains of 20), hot spot in pkg/m210.py", ok,
+           (f"{len(v['run']['files'])} files; import analysis {v['timings']['project_ns']/1e6:.0f} ms; "
+            f"{outcome(v)}; wall {secs:.1f} s") if v else first_error(p))
+    for i in range(1001):
+        (big / f"extra_{i}.py").write_text("x = 1\n")
+    (big / "main.py").write_text("".join(f"import extra_{i}\n" for i in range(1001)) + "print(1)\n")
+    p, v, _ = plain("too-many", [str(big / "main.py")])
+    record("project", "1003-module closure is refused (cap 1000 files)", p.returncode == 2 and "1000" in first_error(p),
+           f"exit {p.returncode}: {first_error(p)}")
+    shutil.rmtree(big)
+
+    p, v, _ = plain("stdlib", [f"{S}/stdlib_heavy.py"])
+    record("stdlib", "stdlib_heavy.py (collections, itertools, heapq, re, json, dataclasses …)",
+           p.returncode == 0 and v is not None, f"exit {p.returncode}; {outcome(v)}; baseline {fmt_ns(v['baseline']['median_ns'])}")
+
+    # Third-party packages. A fresh cache measures the install; the rerun reuses it.
+    cache = OUT / "cache-fresh"
+    shutil.rmtree(cache, ignore_errors=True)
+    p, v, secs = plain("numpy", [f"{S}/numpy_project/stats.py"], env={"ACO_CACHE_DIR": str(cache)})
+    pk = ", ".join(f"{x['name']} {x['version']}" for x in v["run"]["packages"]) if v else ""
+    ok = p.returncode == 0 and v and v["best"]["confirmed"] and "numpy 2.3.4" in pk
+    record("packages", "numpy_project (numpy + more-itertools), fresh cache", ok,
+           f"{outcome(v)}; installed {pk}; install {v['timings']['deps_ns']/1e9:.1f} s (outside the timed runs); wall {secs:.1f} s")
+    p, v, secs = plain("numpy-cached", [f"{S}/numpy_project/stats.py"], env={"ACO_CACHE_DIR": str(cache)})
+    ok = p.returncode == 0 and "using cached packages" in p.stderr + p.stdout
+    record("packages", "numpy_project rerun reuses the cache", ok,
+           f"deps step {v['timings']['deps_ns']/1e6:.0f} ms; {outcome(v)}")
+    p, _, _ = plain("missing", [f"{S}/missing_dep.py"])
+    record("packages", "import of an undeclared package", p.returncode == 2 and "Add `PyYAML`" in first_error(p),
+           f"exit {p.returncode}: {first_error(p)}")
+    p, _, _ = plain("badreq", [f"{S}/bad_requirements/use.py"])
+    record("packages", "requirements.txt with a pip option (-e git+…)", p.returncode == 2 and "not supported" in first_error(p),
+           f"exit {p.returncode}: {first_error(p)}")
+    d = Path(tempfile.mkdtemp(prefix="aco-nowheel-"))
+    (d / "requirements.txt").write_text("pycairo==1.20.0\n")
+    (d / "main.py").write_text("import cairo\nprint(1)\n")
+    p, _, _ = plain("nowheel", [str(d / "main.py")])
+    record("packages", "package with no wheel (pycairo 1.20.0, sdist only)",
+           p.returncode == 2 and "no installable wheel" in first_error(p), f"exit {p.returncode}: {first_error(p)}")
+    shutil.rmtree(d)
+
+    # Semantics traps: rewrites that look right but change behaviour.
+    for name, why in [("alias_set", "list mutated through an alias after the loop"),
+                      ("global_mutation", "list mutated by a function through `global`"),
+                      ("partial_bubble", "bubble loop that stops early (not a full sort)"),
+                      ("loopvar_bubble", "loop variable read after the sort")]:
+        p, v, _ = plain(f"trap-{name}", [f"{S}/traps/{name}.py"])
+        ok = p.returncode == 0 and v and not v["candidates"] and not v["best"]["confirmed"]
+        record("semantics trap", f"{name}.py: {why}", ok,
+               f"no rewrite proposed (rule refuses statically); {len(v['candidates'])} candidates; original kept"
+               " (at 454c873 the rule fired and only the output check caught it)")
+    p, v, _ = plain("trap-duplicates", [f"{S}/traps/duplicates_order.py"])
+    same = stdout_of(ROOT / f"{S}/traps/duplicates_order.py")[1] == stdout_of(OUT / "stress/trap-duplicates/duplicates_order.best.py")[1]
+    record("semantics trap", "duplicates_order.py: order-preserving dedup keeps order", p.returncode == 0 and v["best"]["confirmed"] and same,
+           f"{outcome(v)}; best.py stdout identical: {same}")
+    p, v, _ = plain("trap-setout", [f"{S}/traps/set_output.py"])
+    record("semantics trap", "set_output.py prints a set (hash-order output)", p.returncode == 0 and v["best"]["confirmed"],
+           f"{outcome(v)}; baseline and candidate share each round's PYTHONHASHSEED, so a correct rewrite is accepted "
+           "(at 454c873 random per-process seeds rejected it as 'output differs')")
+
+    # hashseed: a rewrite to list(set(...)) matches at seed 0 only. Served by a mock model.
+    src = (ROOT / f"{S}/traps/hashseed.py").read_text()
+    bad = src.split("seen = []")[0] + "seen = list(set(words))\nprint(seen)\n"
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("content-length", 0)))
+            body = json.dumps({"choices": [{"message": {"content": "```python\n" + bad + "```"}}],
+                               "usage": {"completion_tokens": 9}}).encode()
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    p, v, _ = plain("trap-hashseed", ["--proposer", "ollama", "--endpoint", f"http://127.0.0.1:{srv.server_address[1]}",
+                                      f"{S}/traps/hashseed.py"])
+    srv.shutdown()
+    kept = [c for c in v["candidates"] if c["decision"] == "keep"]
+    conf = v.get("confirmation") or {}
+    ok = p.returncode == 0 and kept and not v["best"]["confirmed"] and "PYTHONHASHSEED" in (conf.get("detail") or "")
+    record("semantics trap", "hashseed.py: list(set(…)) matches only under seed 0", ok,
+           f"passed the search (seed 0) at {kept[0]['speedup']:.0f}x, then confirmation: {(conf.get("detail") or "?")[:110]}"
+           if kept else f"{first_error(p)}")
+
+    # Scripts that read stdin and argv, write stderr, exit non-zero, or vary.
+    inp = (ROOT / f"{S}/io/input.txt").read_bytes()
+    p, v, _ = plain("io-args", ["--stdin", f"{S}/io/input.txt", f"{S}/io/count_words.py", "--", "40"])
+    ref = stdout_of(ROOT / f"{S}/io/count_words.py", stdin=inp, args=["40"])
+    got = stdout_of(OUT / "stress/io-args/count_words.best.py", stdin=inp, args=["40"])
+    record("stdin/argv", "count_words.py --stdin input.txt -- 40", p.returncode == 0 and ref == got,
+           f"{outcome(v)}; best.py stdout, stderr and exit code identical with the same stdin/args: {ref == got}")
+    p, v, _ = plain("io-exit", ["--stdin", f"{S}/io/input.txt", f"{S}/io/count_words.py", "--", "40", "fail"])
+    record("stdin/argv", "count_words.py exiting with status 3", p.returncode == 0 and v["baseline"].get("exit_code") == 3,
+           f"baseline exit code {v['baseline'].get('exit_code')} recorded and required of candidates; {outcome(v)}")
+    for name, want in [("unseeded_random", "nondeterministic output"), ("prints_time", "nondeterministic output")]:
+        p, _, _ = plain(f"io-{name}", [f"{S}/io/{name}.py"])
+        record("nondeterminism", f"{name}.py", p.returncode == 1 and want in first_error(p),
+               f"exit {p.returncode}: {first_error(p)[:200]}")
+    for name in ("seeded_random", "timing_internal"):
+        p, v, _ = plain(f"io-{name}", [f"{S}/io/{name}.py"])
+        record("nondeterminism", f"{name}.py (deterministic output)", p.returncode == 0 and v["best"]["confirmed"], outcome(v))
+
+    # Encodings and newer syntax.
+    for name, check in [("crlf", lambda b: b"\r\n" in b and b.count(b"\n") == b.count(b"\r\n")),
+                        ("bom", lambda b: b.startswith(b"\xef\xbb\xbf")),
+                        ("tabs", lambda b: b"\n\t" in b)]:
+        p, v, _ = plain(f"enc-{name}", [f"{S}/encoding/{name}.py"])
+        b = (OUT / f"stress/enc-{name}/{name}.best.py").read_bytes()
+        record("encoding", f"{name}.py", p.returncode == 0 and v["best"]["confirmed"] and check(b),
+               f"{outcome(v)}; best.py keeps {dict(crlf='the CRLF line endings', bom='the UTF-8 BOM', tabs='tab indentation')[name]}: {check(b)}")
+    p, v, _ = plain("enc-unicode", [f"{S}/encoding/unicode_names.py"])
+    record("encoding", "unicode_names.py (non-ASCII identifiers and strings)", p.returncode == 0, outcome(v))
+    for name in ("latin1", "declared_latin1"):
+        p, _, _ = plain(f"enc-{name}", [f"{S}/encoding/{name}.py"])
+        record("encoding", f"{name}.py refused with a fix", p.returncode == 2 and "iconv" in first_error(p),
+               f"exit {p.returncode}: {first_error(p)[:200]}")
+    p, _, _ = plain("syn-pep701", [f"{S}/syntax/pep701.py"])
+    record("syntax", "pep701.py (3.12 f-string quote reuse)", p.returncode == 2 and "cannot parse yet" in first_error(p),
+           f"exit {p.returncode}: {first_error(p)[:200]}")
+    for name in ("pep695", "match_stmt"):
+        p, v, _ = plain(f"syn-{name}", [f"{S}/syntax/{name}.py"])
+        record("syntax", f"{name}.py parses and runs", p.returncode == 0 and v is not None,
+               f"exit 0; baseline {fmt_ns(v['baseline']['median_ns'])}; {outcome(v)}")
+    p, v, _ = plain("tiny", [f"{S}/tiny.py"])
+    record("too fast", "tiny.py", p.returncode == 0 and "too fast" in v["stop_reason"] and not v["candidates"],
+           f"baseline {fmt_ns(v['baseline']['median_ns'])}; stop: {v['stop_reason']}")
+
+
+def real_model():
+    ep = os.environ.get("ACO_VERIFY_ENDPOINT", "http://127.0.0.1:8088")
+    model = os.environ.get("ACO_VERIFY_MODEL", "qwen2.5-coder:1.5b")
+    (OUT / "stress").mkdir(parents=True, exist_ok=True)
+    for name in ("bubble", "lookup", "concat"):
+        p, v, secs = plain(f"model-{name}", ["--proposer", "ollama", "--endpoint", ep, "--model", model,
+                                             "--gens", "2", f"fixtures/{name}.py"], reps=5)
+        if v is None:
+            record("real model", f"{model}: fixtures/{name}.py", False, first_error(p))
+            continue
+        cands = [f"{c['origin'].split('#')[-1]}: {c['decision']}" + (f" ({c['detail'][:40]})" if c.get("detail") else "")
+                 for c in v["candidates"]]
+        toks = sum(c["tokens"] for c in v["candidates"])
+        record("real model", f"{model}: fixtures/{name}.py", p.returncode == 0,
+               f"{outcome(v)}; {len(v['candidates'])} candidates, {toks} tokens, model time "
+               f"{v['timings']['propose_ns']/1e9:.1f} s, wall {secs:.0f} s; " + "; ".join(cands))
 
 
 if __name__ == "__main__":

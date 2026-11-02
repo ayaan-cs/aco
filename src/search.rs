@@ -124,6 +124,32 @@ pub struct CandidateRecord {
     pub reward: Option<f64>,
     pub decision: Decision,
     pub detail: Option<String>,
+    /// Unified diff of this candidate against the version it was derived from
+    /// (at most [`CHANGE_LINES`] lines), so a rejection can be understood.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub change: Option<String>,
+}
+
+/// Longest candidate diff kept in the report.
+pub const CHANGE_LINES: usize = 80;
+
+/// A compact unified diff of `b` against `a` for the report.
+fn change_text(a: &str, b: &str) -> Option<String> {
+    // Each line already carries its unified-diff prefix.
+    let lines = crate::ui::diff(a, b, 2);
+    if lines.is_empty() {
+        return None;
+    }
+    let total = lines.len();
+    let mut out: Vec<String> = lines
+        .into_iter()
+        .take(CHANGE_LINES)
+        .map(|(_, l)| l)
+        .collect();
+    if total > CHANGE_LINES {
+        out.push(format!("… {} more diff lines", total - CHANGE_LINES));
+    }
+    Some(out.join("\n"))
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -175,6 +201,9 @@ pub struct Best {
     pub speedup: f64,
     pub confirmed: bool,
     pub reason: String,
+    /// The confirmed version includes a model rewrite, which was checked on
+    /// this run's input only and should be reviewed.
+    pub model_rewrite: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -257,6 +286,8 @@ pub struct Summary {
     pub original: String,
     pub best_source: String,
     pub written: Vec<std::path::PathBuf>,
+    /// See [`Best::model_rewrite`].
+    pub review: bool,
 }
 
 impl Summary {
@@ -281,6 +312,7 @@ impl Summary {
             original: original.to_string(),
             best_source: report.best_source.clone(),
             written,
+            review: report.best.model_rewrite,
         }
     }
 }
@@ -474,6 +506,7 @@ pub fn optimize(
                     reward: None,
                     decision: Decision::RejectPolicy,
                     detail: Some(v.to_string()),
+                    change: change_text(&elite.source, &cand.source),
                 };
                 emit(Event::Candidate(rec.clone()));
                 records.push(rec);
@@ -519,6 +552,7 @@ pub fn optimize(
                 reward: rew,
                 decision,
                 detail,
+                change: change_text(&elite.source, &cand.source),
             };
             emit(Event::Candidate(rec.clone()));
             records.push(rec);
@@ -576,7 +610,7 @@ pub fn optimize(
     emit(Event::Stop(stop_reason.clone()));
 
     let mut confirmation = None;
-    let best = if too_fast {
+    let mut best = if too_fast {
         Best {
             origin: "baseline".into(),
             median_ns: baseline.median_ns,
@@ -584,6 +618,7 @@ pub fn optimize(
             speedup: 1.0,
             confirmed: false,
             reason: "too fast to measure reliably; the original is kept".into(),
+            model_rewrite: false,
         }
     } else if elite.origin == "baseline" {
         Best {
@@ -593,6 +628,7 @@ pub fn optimize(
             speedup: 1.0,
             confirmed: false,
             reason: "no candidate matched the oracle and cleared the time margin".into(),
+            model_rewrite: false,
         }
     } else if cancel.load(Ordering::SeqCst) {
         Best {
@@ -602,6 +638,7 @@ pub fn optimize(
             speedup: 1.0,
             confirmed: false,
             reason: "cancelled before confirmation".into(),
+            model_rewrite: false,
         }
     } else {
         let c = confirm(source, &elite, &oracle, runner, cfg, cancel, emit);
@@ -616,6 +653,7 @@ pub fn optimize(
                     "confirmed by an interleaved re-run ({}/{} rounds won, {} hash seeds)",
                     c.candidate_wins, c.rounds, c.rounds
                 ),
+                model_rewrite: false,
             }
         } else {
             Best {
@@ -629,11 +667,30 @@ pub fn optimize(
                     elite.origin,
                     c.detail.clone().unwrap_or_default()
                 ),
+                model_rewrite: false,
             }
         };
         confirmation = Some(c);
         b
     };
+    if best.confirmed
+        && generations
+            .iter()
+            .any(|g: &GenerationRecord| g.new_elite && g.best_origin.starts_with("model:"))
+    {
+        // Outputs are compared on this run's input only. A model can return a
+        // program that is shorter because it is only right for that input
+        // (for example, one that computes the known answer another way).
+        let rounds = confirmation.as_ref().map_or(0, |c: &Confirmation| c.rounds);
+        let n = format!(
+            "the winning version includes a model rewrite: aco checked that it behaves the \
+             same on this run's input (stdout, stderr and exit code, under {rounds} hash seeds), \
+             not that it is equivalent for every input; review the diff before using it"
+        );
+        emit(Event::Note(n.clone()));
+        notes.push(n);
+        best.model_rewrite = true;
+    }
     emit(Event::Best(best.clone()));
     let best_source = if best.confirmed {
         elite.source.clone()

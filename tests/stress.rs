@@ -333,7 +333,7 @@ fn numpy_and_a_pure_python_dependency_install_and_run() {
     let err = stderr(&o);
     assert_eq!(o.status.code(), Some(0), "{err}");
     assert!(
-        err.contains("installing numpy==2.3.4, more-itertools==10.5.0"),
+        err.contains("requirements numpy==2.3.4, more-itertools==10.5.0"),
         "{err}"
     );
     let r = r.unwrap();

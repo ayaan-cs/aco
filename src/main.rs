@@ -581,7 +581,7 @@ fn prepare(d: &Diag, args: &Args, backend: &dyn Backend, path: &Path) -> Option<
     if let Some(r) = &reqs {
         if !r.specs.is_empty() {
             d.note(format!(
-                "installing {} from {} for the {} sandbox (wheels only; cached after the first run)",
+                "requirements {} from {} for the {} sandbox (wheels only, installed once and cached)",
                 r.specs.join(", "),
                 r.source,
                 backend.name()
