@@ -46,13 +46,21 @@ fn env_is_clean(r: &dyn Runner) {
         1,
     );
     assert!(o.ok(), "{o:?}");
-    assert_eq!(o.stdout.trim(), "absent", "host env leaked into {}", r.name());
+    assert_eq!(
+        o.stdout.trim(),
+        "absent",
+        "host env leaked into {}",
+        r.name()
+    );
 }
 
 fn host_file_is_unreadable(r: &dyn Runner) {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target/aco-host-secret.txt");
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, "host-secret-71c2").unwrap();
+    // A container has its own /etc/hostname; what must not show up is the
+    // host's file content. The unshare root has no /etc at all.
+    let host_hostname = std::fs::read_to_string("/etc/hostname").unwrap_or_default();
     let src = format!(
         "try:\n    print(open({:?}).read())\nexcept OSError as e:\n    print('blocked', type(e).__name__)\n\
          try:\n    print(open('/etc/hostname').read())\nexcept OSError as e:\n    print('blocked', type(e).__name__)\n",
@@ -60,8 +68,21 @@ fn host_file_is_unreadable(r: &dyn Runner) {
     );
     let o = r.run(&src, 1);
     assert!(o.ok(), "{o:?}");
-    assert!(!o.stdout.contains("host-secret-71c2"), "host file readable in {}", r.name());
-    assert_eq!(o.stdout.matches("blocked").count(), 2, "{}", o.stdout);
+    assert!(
+        !o.stdout.contains("host-secret-71c2"),
+        "host file readable in {}",
+        r.name()
+    );
+    assert!(o.stdout.starts_with("blocked"), "{}", o.stdout);
+    let host_hostname = host_hostname.trim();
+    if !host_hostname.is_empty() {
+        assert!(
+            !o.stdout.contains(host_hostname),
+            "host /etc/hostname visible in {}: {}",
+            r.name(),
+            o.stdout
+        );
+    }
 }
 
 fn network_is_unreachable(r: &dyn Runner) {
@@ -76,14 +97,23 @@ fn network_is_unreachable(r: &dyn Runner) {
                \x20       print('blocked')\n";
     let o = r.run(src, 1);
     assert!(o.ok(), "{o:?}");
-    assert!(!o.stdout.contains("connected"), "network reachable in {}", r.name());
+    assert!(
+        !o.stdout.contains("connected"),
+        "network reachable in {}",
+        r.name()
+    );
 }
 
 fn spin_loop_times_out(r: &dyn Runner) {
     let o = r.run("while True:\n    pass\n", 1);
     assert!(o.timed_out, "{o:?}");
-    let oracle = Oracle::Baseline { sha256: String::new() };
-    assert_eq!(judge(1_000_000_000, &oracle, &o, 0.05), Decision::RejectTimeout);
+    let oracle = Oracle::Baseline {
+        sha256: String::new(),
+    };
+    assert_eq!(
+        judge(1_000_000_000, &oracle, &o, 0.05),
+        Decision::RejectTimeout
+    );
 }
 
 fn timing_comes_from_inside(r: &dyn Runner) {
@@ -91,7 +121,11 @@ fn timing_comes_from_inside(r: &dyn Runner) {
     assert!(o.ok(), "{o:?}");
     assert_eq!(o.times_ns.len(), 3);
     // Sandbox startup is tens of milliseconds or more; the timed body is not.
-    assert!(o.median_ns < 20_000_000, "median {} ns includes startup", o.median_ns);
+    assert!(
+        o.median_ns < 20_000_000,
+        "median {} ns includes startup",
+        o.median_ns
+    );
     assert!(o.peak_rss_kb > 0);
     assert_eq!(o.stdout, "499500\n");
 }
@@ -158,7 +192,10 @@ fn disabled_userns_fails_closed_with_named_settings() {
     let err = r.probe().unwrap_err();
     assert!(err.contains("Operation not permitted"), "{err}");
     assert!(err.contains("kernel.unprivileged_userns_clone"), "{err}");
-    assert!(err.contains("kernel.apparmor_restrict_unprivileged_userns"), "{err}");
+    assert!(
+        err.contains("kernel.apparmor_restrict_unprivileged_userns"),
+        "{err}"
+    );
     assert!(err.contains("--sandbox docker"), "{err}");
     // And a run through the broken sandbox is an error, never an unsandboxed pass.
     let o = r.run("print(1)\n", 1);
