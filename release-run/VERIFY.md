@@ -174,3 +174,5 @@ The built-in rules are deterministic, so on real runs `--gens`/`--pop` are obser
 - `ACO_TEST_PANIC=1` is a test-only hook that panics in the search thread, to prove the terminal is restored on a crash (exit 101).
 - Speedups depend on the interpreter. CI's Docker image runs CPython 3.12; this box runs 3.13.5.
 - [bench.md](bench.md) and [transcript.txt](transcript.txt) were regenerated in this pass with `python3 scripts/bench.py` (fixtures plus 15 stress cases).
+
+**Note (2026-11-02, after this pass).** Rows 83 and 130 and the bench row for `traps/set_output.py` were measured with a smaller workload (50 distinct words, 1.6-1.7x, confirmed 9/10 in the bench). That margin was thin enough to fail once in Linux CI on a noisy runner, so the fixture now uses 400 distinct words; locally it confirms 5.5-6.6x in 4/4 runs. The figures above were not re-measured.
