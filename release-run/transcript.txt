@@ -1,0 +1,47 @@
+$ cargo run --release -- --plain --json --out release-run fixtures/bubble.py fixtures/concat.py fixtures/lookup.py fixtures/slower.py
+# 2026-11-02 02:18 CST on Linux 6.12.94+, Python 3.13.5, 8 CPUs
+== fixtures/bubble.py  sandbox=unshare  proposer=rules
+baseline          median 317.7 ms  rss 16.0 MB  reps 5
+gen 1 #0  rule:bubble-sort:sorted      median    0.803 ms  rss  16.0 MB  tokens    0  speedup  395.57x  reward  395.416  KEEP
+gen 1 #1  rule:bubble-sort:list.sort   median    0.787 ms  rss  16.0 MB  tokens    0  speedup  403.76x  reward  403.614  KEEP
+gen 1 done: 2 evaluated, 2 kept, elite rule:bubble-sort:list.sort at 0.787 ms (new elite)
+gen 2 done: 0 evaluated, 0 kept, elite rule:bubble-sort:list.sort at 0.787 ms
+stop: early stop: 1 generation(s) without a new elite (--patience 1)
+confirm rule:bubble-sort:list.sort: 10 interleaved rounds (baseline, candidate, ...) in fresh sandboxes
+confirm           baseline median 316.3 ms  candidate median 0.806 ms  speedup 392.60x  CONFIRMED
+best: rule:bubble-sort:list.sort  median 0.806 ms  speedup 392.60x  (confirmed by an interleaved re-run)
+note: wrote release-run/bubble.best.py
+note: wrote release-run/bubble.report.json
+== fixtures/concat.py  sandbox=unshare  proposer=rules
+baseline          median 258.3 ms  rss 15.8 MB  reps 5
+gen 1 #0  rule:concat:join             median    4.507 ms  rss  17.5 MB  tokens    0  speedup   57.32x  reward   57.154  KEEP
+gen 1 done: 1 evaluated, 1 kept, elite rule:concat:join at 4.507 ms (new elite)
+gen 2 done: 0 evaluated, 0 kept, elite rule:concat:join at 4.507 ms
+stop: early stop: 1 generation(s) without a new elite (--patience 1)
+confirm rule:concat:join: 10 interleaved rounds (baseline, candidate, ...) in fresh sandboxes
+confirm           baseline median 262.1 ms  candidate median 4.564 ms  speedup 57.42x  CONFIRMED
+best: rule:concat:join  median 4.564 ms  speedup 57.42x  (confirmed by an interleaved re-run)
+note: wrote release-run/concat.best.py
+note: wrote release-run/concat.report.json
+== fixtures/lookup.py  sandbox=unshare  proposer=rules
+baseline          median 244.1 ms  rss 15.3 MB  reps 5
+gen 1 #0  rule:membership:set          median    1.351 ms  rss  15.4 MB  tokens    0  speedup  180.64x  reward  180.492  KEEP
+gen 1 #1  rule:membership:frozenset    median    1.324 ms  rss  15.4 MB  tokens    0  speedup  184.31x  reward  184.157  KEEP
+gen 1 done: 2 evaluated, 2 kept, elite rule:membership:frozenset at 1.324 ms (new elite)
+gen 2 done: 0 evaluated, 0 kept, elite rule:membership:frozenset at 1.324 ms
+stop: early stop: 1 generation(s) without a new elite (--patience 1)
+confirm rule:membership:frozenset: 10 interleaved rounds (baseline, candidate, ...) in fresh sandboxes
+confirm           baseline median 246.0 ms  candidate median 1.336 ms  speedup 184.13x  CONFIRMED
+best: rule:membership:frozenset  median 1.336 ms  speedup 184.13x  (confirmed by an interleaved re-run)
+note: wrote release-run/lookup.best.py
+note: wrote release-run/lookup.report.json
+== fixtures/slower.py  sandbox=unshare  proposer=rules
+baseline          median 227.1 ms  rss 15.1 MB  reps 5
+gen 1 #0  rule:membership:set          median    297.8 ms  rss  15.3 MB  tokens    0  speedup    0.76x  reward    0.611  reject (not 5% faster)
+gen 1 #1  rule:membership:frozenset    median    300.7 ms  rss  15.3 MB  tokens    0  speedup    0.75x  reward    0.603  reject (not 5% faster)
+gen 1 done: 2 evaluated, 0 kept, elite baseline at 227.1 ms
+stop: early stop: 1 generation(s) without a new elite (--patience 1)
+best: baseline  median 227.1 ms  speedup 1.00x  (no candidate matched the oracle and cleared the time margin)
+note: wrote release-run/slower.best.py
+note: wrote release-run/slower.report.json
+# exit 0

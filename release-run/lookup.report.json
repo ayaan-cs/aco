@@ -1,0 +1,134 @@
+{
+  "tool": "aco 0.1.0",
+  "file": "fixtures/lookup.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512
+  },
+  "baseline": {
+    "median_ns": 244105417,
+    "times_ns": [
+      243926644,
+      260889929,
+      244105417,
+      242666955,
+      246260463
+    ],
+    "peak_rss_kb": 15628
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:membership:set",
+      "tokens": 0,
+      "median_ns": 1351309,
+      "times_ns": [
+        1358345,
+        1351309,
+        1327764,
+        1333121,
+        1605478
+      ],
+      "peak_rss_kb": 15772,
+      "speedup": 180.6436699526163,
+      "reward": 180.49228781798615,
+      "decision": "keep",
+      "detail": null
+    },
+    {
+      "gen": 1,
+      "index": 1,
+      "origin": "rule:membership:frozenset",
+      "tokens": 0,
+      "median_ns": 1324442,
+      "times_ns": [
+        1325610,
+        1324442,
+        1318998,
+        1284579,
+        1547373
+      ],
+      "peak_rss_kb": 15780,
+      "speedup": 184.3081214579423,
+      "reward": 184.15666253805492,
+      "decision": "keep",
+      "detail": null
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 2,
+      "kept": 2,
+      "new_elite": true,
+      "best_origin": "rule:membership:frozenset",
+      "best_median_ns": 1324442,
+      "best_peak_rss_kb": 15780,
+      "best_reward": 184.15666253805492,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:membership:frozenset",
+      "best_median_ns": 1324442,
+      "best_peak_rss_kb": 15780,
+      "best_reward": 184.15666253805492,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "early stop: 1 generation(s) without a new elite (--patience 1)",
+  "confirmation": {
+    "origin": "rule:membership:frozenset",
+    "rounds": 10,
+    "baseline_times_ns": [
+      246077274,
+      245731858,
+      242043019,
+      247710122,
+      244761756,
+      262623637,
+      241037397,
+      248813222,
+      245889041,
+      252170466
+    ],
+    "candidate_times_ns": [
+      1335963,
+      1334532,
+      1323444,
+      1339356,
+      1348998,
+      1335755,
+      1403129,
+      1335831,
+      1433691,
+      1331842
+    ],
+    "baseline_median_ns": 245983157,
+    "candidate_median_ns": 1335897,
+    "speedup": 184.13332539858988,
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:membership:frozenset",
+    "median_ns": 1335897,
+    "peak_rss_kb": 15780,
+    "speedup": 184.13332539858988,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run"
+  },
+  "best_source": "# Repeated membership tests against a list inside a loop.\n\nallowed = [i * 7 for i in range(2000)]\nhits = 0\nallowed_set = frozenset(allowed)\nfor k in range(35000):\n    if k in allowed_set:\n        hits += 1\n\nprint(hits)\n"
+}

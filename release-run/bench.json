@@ -1,0 +1,57 @@
+[
+  {
+    "fixture": "bubble.py",
+    "sandbox": "unshare",
+    "baseline_median_ms": 317.726,
+    "confirm_baseline_median_ms": 316.258,
+    "confirmed_median_ms": 0.806,
+    "speedup": 392.6,
+    "best": "rule:bubble-sort:list.sort",
+    "result": "kept + confirmed",
+    "rejected_candidates": []
+  },
+  {
+    "fixture": "concat.py",
+    "sandbox": "unshare",
+    "baseline_median_ms": 258.327,
+    "confirm_baseline_median_ms": 262.087,
+    "confirmed_median_ms": 4.564,
+    "speedup": 57.42,
+    "best": "rule:concat:join",
+    "result": "kept + confirmed",
+    "rejected_candidates": []
+  },
+  {
+    "fixture": "lookup.py",
+    "sandbox": "unshare",
+    "baseline_median_ms": 244.105,
+    "confirm_baseline_median_ms": 245.983,
+    "confirmed_median_ms": 1.336,
+    "speedup": 184.13,
+    "best": "rule:membership:frozenset",
+    "result": "kept + confirmed",
+    "rejected_candidates": []
+  },
+  {
+    "fixture": "slower.py",
+    "sandbox": "unshare",
+    "baseline_median_ms": 227.062,
+    "confirm_baseline_median_ms": null,
+    "confirmed_median_ms": null,
+    "speedup": null,
+    "best": "baseline",
+    "result": "rejected (reject_margin)",
+    "rejected_candidates": [
+      {
+        "origin": "rule:membership:set",
+        "median_ms": 297.8,
+        "speedup": 0.76
+      },
+      {
+        "origin": "rule:membership:frozenset",
+        "median_ms": 300.7,
+        "speedup": 0.75
+      }
+    ]
+  }
+]

@@ -9,9 +9,16 @@
 - [x] 5. Local model proposer (OpenAI-compatible HTTP, mock-server test)
 - [x] 6. Interface (Ratatui TUI, --plain, --json)
 - [x] 7. Docs and CI (LICENSE, README, SECURITY, CONTRIBUTING, ci.yml)
-- [ ] 9. Release run on fixtures, transcript and bench in release-run/
+- [x] 9. Release run on fixtures, transcript and bench in release-run/
 - Not in this run: step 8 (portfolio sheet), pushing to GitHub.
 
 ## Notes
 - Box: Debian 13, Python 3.13 at /usr/bin/python3, no Docker, unprivileged user namespaces work.
 - Toolchain: rustup stable (cargo 1.99.1) with clippy at ~/.cargo/bin.
+
+## Status (2026-11-02)
+- cargo test: 41 passed (the 5 Docker isolation cases skip on this box: no Docker installed).
+- cargo clippy --all-targets -- -D warnings: clean.
+- Release run: release-run/transcript.txt, release-run/bench.md, release-run/bench.json, per-fixture *.report.json and *.best.py.
+- Remaining for the parent: push to https://github.com/ayaan-cs/aco (needs a token), then step 8 (portfolio sheet) in the portfolio repo using release-run/bench.md.
+- Unverified here: the Docker runner (CI on ubuntu-latest has Docker and will exercise it; unshare cases will likely skip there because of Ubuntu's AppArmor userns restriction).

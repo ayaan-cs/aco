@@ -1,0 +1,115 @@
+{
+  "tool": "aco 0.1.0",
+  "file": "fixtures/concat.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512
+  },
+  "baseline": {
+    "median_ns": 258326926,
+    "times_ns": [
+      257474130,
+      262065510,
+      258337098,
+      258326926,
+      256726500
+    ],
+    "peak_rss_kb": 16228
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:concat:join",
+      "tokens": 0,
+      "median_ns": 4506804,
+      "times_ns": [
+        4537103,
+        4506804,
+        4404334,
+        5913372,
+        4338810
+      ],
+      "peak_rss_kb": 17888,
+      "speedup": 57.31931674863162,
+      "reward": 57.15397289849605,
+      "decision": "keep",
+      "detail": null
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 1,
+      "kept": 1,
+      "new_elite": true,
+      "best_origin": "rule:concat:join",
+      "best_median_ns": 4506804,
+      "best_peak_rss_kb": 17888,
+      "best_reward": 57.15397289849605,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:concat:join",
+      "best_median_ns": 4506804,
+      "best_peak_rss_kb": 17888,
+      "best_reward": 57.15397289849605,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "early stop: 1 generation(s) without a new elite (--patience 1)",
+  "confirmation": {
+    "origin": "rule:concat:join",
+    "rounds": 10,
+    "baseline_times_ns": [
+      260135837,
+      262106427,
+      280738393,
+      267799513,
+      262067492,
+      260119828,
+      260146917,
+      261049306,
+      270076869,
+      271523153
+    ],
+    "candidate_times_ns": [
+      4474452,
+      4704115,
+      4468746,
+      5053766,
+      4576940,
+      4365462,
+      4641304,
+      4382833,
+      4790643,
+      4551540
+    ],
+    "baseline_median_ns": 262086959,
+    "candidate_median_ns": 4564240,
+    "speedup": 57.42181809019684,
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:concat:join",
+    "median_ns": 4564240,
+    "peak_rss_kb": 17888,
+    "speedup": 57.42181809019684,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run"
+  },
+  "best_source": "# Building a large string with += in a loop (quadratic at module scope).\n\nreport_parts = []\nfor i in range(40000):\n    report_parts.append(str(i * 31 % 9973) + \",\")\nreport = \"\".join(report_parts)\n\nprint(len(report), report[:24], report[-24:])\n"
+}

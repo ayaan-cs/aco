@@ -1,0 +1,134 @@
+{
+  "tool": "aco 0.1.0",
+  "file": "fixtures/bubble.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512
+  },
+  "baseline": {
+    "median_ns": 317726151,
+    "times_ns": [
+      316725147,
+      317788929,
+      317726151,
+      317376827,
+      363489040
+    ],
+    "peak_rss_kb": 16420
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:bubble-sort:sorted",
+      "tokens": 0,
+      "median_ns": 803220,
+      "times_ns": [
+        803220,
+        806028,
+        860067,
+        801599,
+        786787
+      ],
+      "peak_rss_kb": 16420,
+      "speedup": 395.5655374617166,
+      "reward": 395.4155374617166,
+      "decision": "keep",
+      "detail": null
+    },
+    {
+      "gen": 1,
+      "index": 1,
+      "origin": "rule:bubble-sort:list.sort",
+      "tokens": 0,
+      "median_ns": 786911,
+      "times_ns": [
+        775606,
+        776063,
+        786911,
+        823677,
+        800277
+      ],
+      "peak_rss_kb": 16388,
+      "speedup": 403.7637687108199,
+      "reward": 403.6140610372511,
+      "decision": "keep",
+      "detail": null
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 2,
+      "kept": 2,
+      "new_elite": true,
+      "best_origin": "rule:bubble-sort:list.sort",
+      "best_median_ns": 786911,
+      "best_peak_rss_kb": 16388,
+      "best_reward": 403.6140610372511,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:bubble-sort:list.sort",
+      "best_median_ns": 786911,
+      "best_peak_rss_kb": 16388,
+      "best_reward": 403.6140610372511,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "early stop: 1 generation(s) without a new elite (--patience 1)",
+  "confirmation": {
+    "origin": "rule:bubble-sort:list.sort",
+    "rounds": 10,
+    "baseline_times_ns": [
+      314650013,
+      383486210,
+      316776860,
+      314071122,
+      315739547,
+      319898655,
+      313847055,
+      319237404,
+      317721125,
+      314835365
+    ],
+    "candidate_times_ns": [
+      808268,
+      817410,
+      761358,
+      894195,
+      802829,
+      795736,
+      786347,
+      780330,
+      829826,
+      870205
+    ],
+    "baseline_median_ns": 316258203,
+    "candidate_median_ns": 805548,
+    "speedup": 392.6000722489535,
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:bubble-sort:list.sort",
+    "median_ns": 805548,
+    "peak_rss_kb": 16388,
+    "speedup": 392.6000722489535,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run"
+  },
+  "best_source": "# Pure-Python bubble sort of a few thousand pseudo-random ints.\n\n\ndef bubble(xs):\n    n = len(xs)\n    xs.sort()\n    return xs\n\n\nseed = 12345\ndata = []\nfor _ in range(3500):\n    seed = (seed * 1103515245 + 12345) % 2147483648\n    data.append(seed % 100000)\n\nout = bubble(data)\nprint(out[0], out[len(out) // 2], out[-1], sum(out[:100]))\n"
+}

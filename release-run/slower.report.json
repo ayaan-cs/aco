@@ -1,0 +1,90 @@
+{
+  "tool": "aco 0.1.0",
+  "file": "fixtures/slower.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512
+  },
+  "baseline": {
+    "median_ns": 227062145,
+    "times_ns": [
+      226581919,
+      226862199,
+      228793694,
+      229270835,
+      227062145
+    ],
+    "peak_rss_kb": 15484
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:membership:set",
+      "tokens": 0,
+      "median_ns": 297822422,
+      "times_ns": [
+        296033470,
+        303581489,
+        296502151,
+        304686007,
+        297822422
+      ],
+      "peak_rss_kb": 15640,
+      "speedup": 0.7624078250226572,
+      "reward": 0.6108965876163023,
+      "decision": "reject_margin",
+      "detail": null
+    },
+    {
+      "gen": 1,
+      "index": 1,
+      "origin": "rule:membership:frozenset",
+      "tokens": 0,
+      "median_ns": 300745331,
+      "times_ns": [
+        297629222,
+        300745331,
+        311832109,
+        346667557,
+        297719618
+      ],
+      "peak_rss_kb": 15676,
+      "speedup": 0.754998071773889,
+      "reward": 0.6031380872737598,
+      "decision": "reject_margin",
+      "detail": null
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 2,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "baseline",
+      "best_median_ns": 227062145,
+      "best_peak_rss_kb": 15484,
+      "best_reward": 0.85,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "early stop: 1 generation(s) without a new elite (--patience 1)",
+  "confirmation": null,
+  "best": {
+    "origin": "baseline",
+    "median_ns": 227062145,
+    "peak_rss_kb": 15484,
+    "speedup": 1.0,
+    "confirmed": false,
+    "reason": "no candidate matched the oracle and cleared the time margin"
+  },
+  "best_source": "# A tight loop where hoisting a set looks clever but costs more than it saves:\n# the list is rebuilt every row and only probed three times.\n\nhits = 0\nfor row in range(1200000):\n    small = [row % 3, 5, 9]\n    for v in (1, 2, 3):\n        if v in small:\n            hits += 1\n\nprint(hits)\n"
+}
