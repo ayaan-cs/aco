@@ -325,7 +325,8 @@ impl Dashboard {
         self.draw_table(f, table);
         if let Some(s) = summary {
             let [left, right] =
-                Layout::horizontal([Constraint::Length(48), Constraint::Min(30)]).areas(bottom);
+                Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)])
+                    .areas(bottom);
             draw_summary(f, left, s);
             draw_diff(f, right, s);
         }
@@ -577,11 +578,19 @@ fn draw_summary(f: &mut Frame, area: Rect, s: &Summary) {
         key("searched"),
         Span::raw(format!("{} candidates, {} kept", s.evaluated, s.kept)),
     ]));
-    for (i, p) in s.written.iter().enumerate() {
-        let k = if i == 0 { key("wrote") } else { key("") };
+    let room = (area.width as usize).saturating_sub(4 + 11).max(12);
+    for p in &s.written {
+        let k = if p.extension().is_some_and(|e| e == "json") {
+            key("report")
+        } else {
+            key("best.py")
+        };
         lines.push(Line::from(vec![
             k,
-            Span::styled(p.display().to_string(), Style::new().fg(Color::Cyan)),
+            Span::styled(
+                clip_left(&p.display().to_string(), room),
+                Style::new().fg(Color::Cyan),
+            ),
         ]));
     }
     lines.push(Line::from(Span::styled(
@@ -596,6 +605,17 @@ fn draw_summary(f: &mut Frame, area: Rect, s: &Summary) {
         ),
         area,
     );
+}
+
+/// Keep the end of a path (the file name matters most) within `max` chars.
+fn clip_left(s: &str, max: usize) -> String {
+    let n = s.chars().count();
+    if n <= max {
+        s.to_string()
+    } else {
+        let tail: String = s.chars().skip(n - (max - 1)).collect();
+        format!("…{tail}")
+    }
 }
 
 fn draw_diff(f: &mut Frame, area: Rect, s: &Summary) {

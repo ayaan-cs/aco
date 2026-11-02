@@ -452,21 +452,25 @@ fn main() -> ExitCode {
         signal_hook::consts::SIGTERM,
         signal_hook::consts::SIGHUP,
     ] {
-        if plain {
-            // A second Ctrl-C exits at once.
-            let _ = signal_hook::flag::register_conditional_shutdown(sig, 130, signalled.clone());
-        }
         let _ = signal_hook::flag::register(sig, signalled.clone());
     }
     {
+        // First signal: cancel and kill sandboxes; the run winds down and
+        // reports. A second signal: force quit right away.
         let (cancel, signalled) = (cancel.clone(), signalled.clone());
-        std::thread::spawn(move || loop {
-            if signalled.load(Ordering::SeqCst) {
-                cancel.store(true, Ordering::SeqCst);
-                abort_all();
-                return;
+        std::thread::spawn(move || {
+            let mut seen = 0;
+            loop {
+                if signalled.swap(false, Ordering::SeqCst) {
+                    seen += 1;
+                    cancel.store(true, Ordering::SeqCst);
+                    abort_all();
+                    if seen >= 2 {
+                        force_quit(!plain);
+                    }
+                }
+                std::thread::sleep(Duration::from_millis(20));
             }
-            std::thread::sleep(Duration::from_millis(20));
         });
     }
 
@@ -500,7 +504,14 @@ fn main() -> ExitCode {
         finished = std::mem::take(&mut r.finished);
         errors
     } else {
-        let on_cancel = || abort_all();
+        let on_cancel = || {
+            // A second q/Ctrl-C while already cancelling forces the exit (a
+            // slow model request cannot be interrupted).
+            if aco::runner::aborted() {
+                force_quit(true);
+            }
+            abort_all();
+        };
         let res = run_dashboard(inputs.len(), &cancel, &on_cancel, |emit| {
             let mut local: Vec<Summary> = Vec::new();
             let errors = {
@@ -568,4 +579,16 @@ fn main() -> ExitCode {
     } else {
         ExitCode::from(1)
     }
+}
+
+/// Exit now with 130 after giving the runner threads a moment to kill their
+/// sandboxes (they poll the abort flag every few milliseconds).
+fn force_quit(tui: bool) -> ! {
+    abort_all();
+    std::thread::sleep(Duration::from_millis(150));
+    if tui {
+        ratatui::restore();
+    }
+    eprintln!("aco: force quit");
+    std::process::exit(130);
 }

@@ -95,7 +95,7 @@ fn dashboard_shows_header_gauge_sparklines_table_summary_and_diff() {
         "confirm rule:bubble-sort:sorted",
         "summary",
         "200.0x faster, confirmed",
-        "aco-out/bubble.best.py",
+        "best.py    aco-out/bubble.best.py",
         "diff · original → best",
         "+    xs[:] = sorted(xs)",
         "-    for i in range(n):",

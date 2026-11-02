@@ -67,6 +67,7 @@ impl HttpProposer {
         });
         let agent: ureq::Agent = ureq::Agent::config_builder()
             .timeout_global(Some(self.timeout))
+            .timeout_connect(Some(Duration::from_secs(10)))
             .build()
             .into();
         let mut resp = agent
@@ -130,7 +131,16 @@ impl Proposer for HttpProposer {
                     }
                 }
                 Err(e) => {
-                    self.note(format!("model request to {} failed: {e}", self.endpoint));
+                    let hint = if e.contains("Connection refused") || e.contains("timeout: connect")
+                    {
+                        format!(" (is Ollama or llama-server running at {}?)", self.endpoint)
+                    } else {
+                        String::new()
+                    };
+                    self.note(format!(
+                        "model request to {} failed: {e}{hint}",
+                        self.endpoint
+                    ));
                     break;
                 }
             }
