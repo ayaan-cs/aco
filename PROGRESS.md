@@ -4,7 +4,8 @@
 - [x] 2. Policy pre-filter and rule mutators
 - [x] 3. Scoring and search (in-sandbox timing harness, median, 5% gate, confirmation re-run, early stop, bounded pool)
   - Real-runner search tests (keep+confirm bubble/concat/lookup, reject slower) land with step 4.
-- [ ] 4. Sandbox (Docker runner, unshare fallback, isolation tests)
+- [x] 4. Sandbox (Docker runner, unshare fallback, isolation tests)
+  - unshare isolation tests pass on this box; Docker cases skip (no Docker installed). Removing --net or the env scrub makes them fail (checked).
 - [ ] 5. Local model proposer (OpenAI-compatible HTTP, mock-server test)
 - [ ] 6. Interface (Ratatui TUI, --plain, --json)
 - [ ] 7. Docs and CI (LICENSE, README, SECURITY, CONTRIBUTING, ci.yml)
