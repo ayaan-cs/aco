@@ -85,6 +85,50 @@ pub fn parse_module(source: &str) -> Result<Vec<ast::Stmt>, String> {
     }
 }
 
+/// A syntax error with a 1-based line and column (in characters).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SyntaxError {
+    pub message: String,
+    pub line: usize,
+    pub column: usize,
+    /// The offending source line, without its newline.
+    pub text: String,
+}
+
+/// Parse `source` and, if it fails, say where.
+pub fn syntax_error(source: &str) -> Option<SyntaxError> {
+    let e = parse(source, Mode::Module, "<input>").err()?;
+    let offset = (u32::from(e.offset) as usize).min(source.len());
+    let offset = (0..=offset)
+        .rev()
+        .find(|i| source.is_char_boundary(*i))
+        .unwrap_or(0);
+    // An error at end of input points past the last line; show the last
+    // line that has code instead of an empty one.
+    let trimmed = source.trim_end().len();
+    let offset = if offset > trimmed { trimmed } else { offset };
+    let before = &source[..offset];
+    let line = before.matches('\n').count() + 1;
+    let line_start = before.rfind('\n').map(|i| i + 1).unwrap_or(0);
+    let column = source[line_start..offset].chars().count() + 1;
+    let text = source[line_start..]
+        .lines()
+        .next()
+        .unwrap_or("")
+        .to_string();
+    Some(SyntaxError {
+        message: e.error.to_string(),
+        line,
+        column,
+        text,
+    })
+}
+
+/// True when the module has no statements (empty, blank or comments only).
+pub fn is_empty_module(source: &str) -> bool {
+    matches!(parse_module(source), Ok(body) if body.is_empty())
+}
+
 /// Parse and pre-filter `source`.
 pub fn check(source: &str) -> Result<(), Violation> {
     let body = parse_module(source).map_err(Violation::Syntax)?;
