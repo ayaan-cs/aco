@@ -10,9 +10,16 @@ use aco::score::{judge, Decision, Oracle};
 
 const SENTINEL: &str = "ACO_SENTINEL_9F3A";
 
+/// Per-run limit for these tests. 4 s is plenty on a Linux host; a Docker VM
+/// on a CI Mac can take longer than that just to start a container, so the
+/// macOS job raises it with `ACO_TEST_TIMEOUT_SECS`.
 fn limits() -> Limits {
+    let secs = std::env::var("ACO_TEST_TIMEOUT_SECS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(4);
     Limits {
-        timeout: Duration::from_secs(4),
+        timeout: Duration::from_secs(secs),
         ..Limits::default()
     }
 }

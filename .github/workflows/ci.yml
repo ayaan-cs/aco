@@ -114,7 +114,13 @@ jobs:
           brew install colima docker
           colima start --cpu 2 --memory 4
           docker version
+      - name: container start-up time (informational)
+        run: |
+          docker pull -q python:3.12-slim
+          for i in 1 2 3; do /usr/bin/time -p docker run --rm python:3.12-slim python -c 1; done
       - name: Docker sandbox tests
+        env:
+          ACO_TEST_TIMEOUT_SECS: "60"
         run: cargo test --locked --test sandbox -- --nocapture docker
       - name: end-to-end (docker sandbox)
         run: cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out fixtures/bubble.py
