@@ -32,15 +32,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 88795929,
+    "median_ns": 89177865,
     "times_ns": [
-      88795929,
-      88569101,
-      89919863,
-      89118368,
-      88701112
+      92276933,
+      89692875,
+      88507352,
+      89177865,
+      88384858
     ],
-    "peak_rss_kb": 15884,
+    "peak_rss_kb": 15840,
     "exit_code": 0,
     "stderr": null
   },
@@ -50,17 +50,17 @@
       "index": 0,
       "origin": "rule:membership:set",
       "tokens": 0,
-      "median_ns": 576024,
+      "median_ns": 628036,
       "times_ns": [
-        576024,
-        569025,
-        573308,
-        733253,
-        658260
+        712238,
+        582802,
+        630679,
+        628036,
+        574516
       ],
-      "peak_rss_kb": 15860,
-      "speedup": 154.1531759093371,
-      "reward": 154.00340255250003,
+      "peak_rss_kb": 15840,
+      "speedup": 141.99482991420874,
+      "reward": 141.84482991420873,
       "decision": "keep",
       "detail": null,
       "change": "@@ -3,6 +3,7 @@\n order = [5, 3, 5, 1, 3, 3, 9, 1] * 400\n picked = []\n+order_set = set(order)\n for v in range(12000):\n-    if v % 13 in order:\n+    if v % 13 in order_set:\n         picked.append(v % 13)\n print(len(picked), picked[:10])"
@@ -70,17 +70,17 @@
       "index": 1,
       "origin": "rule:membership:frozenset",
       "tokens": 0,
-      "median_ns": 575634,
+      "median_ns": 578297,
       "times_ns": [
-        576861,
-        571576,
-        568713,
-        575634,
-        721884
+        576122,
+        623332,
+        591332,
+        574723,
+        578297
       ],
-      "peak_rss_kb": 15844,
-      "speedup": 154.25761681902043,
-      "reward": 154.10799455762532,
+      "peak_rss_kb": 15856,
+      "speedup": 154.20772544211712,
+      "reward": 154.0575739269656,
       "decision": "keep",
       "detail": null,
       "change": "@@ -3,6 +3,7 @@\n order = [5, 3, 5, 1, 3, 3, 9, 1] * 400\n picked = []\n+order_set = frozenset(order)\n for v in range(12000):\n-    if v % 13 in order:\n+    if v % 13 in order_set:\n         picked.append(v % 13)\n print(len(picked), picked[:10])"
@@ -93,9 +93,9 @@
       "kept": 2,
       "new_elite": true,
       "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 575634,
-      "best_peak_rss_kb": 15844,
-      "best_reward": 154.10799455762532,
+      "best_median_ns": 578297,
+      "best_peak_rss_kb": 15856,
+      "best_reward": 154.0575739269656,
       "tokens": 0
     },
     {
@@ -104,9 +104,9 @@
       "kept": 0,
       "new_elite": false,
       "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 575634,
-      "best_peak_rss_kb": 15844,
-      "best_reward": 154.10799455762532,
+      "best_median_ns": 578297,
+      "best_peak_rss_kb": 15856,
+      "best_reward": 154.0575739269656,
       "tokens": 0
     }
   ],
@@ -115,32 +115,32 @@
     "origin": "rule:membership:frozenset",
     "rounds": 10,
     "baseline_times_ns": [
-      89416168,
-      106202087,
-      88704930,
-      89127171,
-      88817238,
-      88957821,
-      88859471,
-      88804375,
-      88494710,
-      89000912
+      88447733,
+      88469903,
+      91040221,
+      94400765,
+      89826335,
+      90054334,
+      89906527,
+      89070540,
+      88518793,
+      88706947
     ],
     "candidate_times_ns": [
-      579985,
-      690925,
-      640754,
-      578648,
-      594507,
-      574648,
-      690054,
-      591686,
-      577370,
-      571483
+      600805,
+      604844,
+      633242,
+      1092506,
+      597237,
+      586018,
+      591914,
+      579922,
+      573193,
+      818796
     ],
-    "baseline_median_ns": 88908646,
-    "candidate_median_ns": 585835,
-    "speedup": 151.7639710840083,
+    "baseline_median_ns": 89448437,
+    "candidate_median_ns": 599021,
+    "speedup": 149.32437594007556,
     "candidate_wins": 10,
     "seeds": [
       1,
@@ -160,9 +160,9 @@
   },
   "best": {
     "origin": "rule:membership:frozenset",
-    "median_ns": 585835,
-    "peak_rss_kb": 15844,
-    "speedup": 151.7639710840083,
+    "median_ns": 599021,
+    "peak_rss_kb": 15856,
+    "speedup": 149.32437594007556,
     "confirmed": true,
     "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
     "model_rewrite": false
@@ -170,11 +170,11 @@
   "best_source": "# Duplicates and order: membership does not depend on either, so the set\n# rewrite is safe here and must give identical output.\norder = [5, 3, 5, 1, 3, 3, 9, 1] * 400\npicked = []\norder_set = frozenset(order)\nfor v in range(12000):\n    if v % 13 in order_set:\n        picked.append(v % 13)\nprint(len(picked), picked[:10])\n",
   "notes": [],
   "timings": {
-    "project_ns": 54859,
-    "parse_ns": 18112,
-    "policy_ns": 9675,
+    "project_ns": 47425,
+    "parse_ns": 18927,
+    "policy_ns": 8140,
     "deps_ns": 0,
-    "propose_ns": 318875,
-    "search_ns": 3317189829
+    "propose_ns": 316186,
+    "search_ns": 3239574322
   }
 }

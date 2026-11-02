@@ -34,15 +34,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 24335606,
+    "median_ns": 24510054,
     "times_ns": [
-      24226314,
-      24560298,
-      24335207,
-      24555793,
-      24335606
+      38159610,
+      24540387,
+      24510054,
+      24351323,
+      24329103
     ],
-    "peak_rss_kb": 16364,
+    "peak_rss_kb": 16372,
     "exit_code": 0,
     "stderr": "processed 40 rounds\n"
   },
@@ -52,17 +52,17 @@
       "index": 0,
       "origin": "rule:membership:set",
       "tokens": 0,
-      "median_ns": 22002676,
+      "median_ns": 21917969,
       "times_ns": [
-        22298544,
-        22792232,
-        21919878,
-        22002676,
-        21922465
+        22404600,
+        22029475,
+        21917969,
+        21881279,
+        21837676
       ],
-      "peak_rss_kb": 16380,
-      "speedup": 1.106029375699574,
-      "reward": 0.9558827122920942,
+      "peak_rss_kb": 16388,
+      "speedup": 1.118263010591903,
+      "reward": 0.9681164188499044,
       "decision": "keep",
       "detail": null,
       "change": "@@ -7,7 +7,8 @@\n text = sys.stdin.read()\n kept = 0\n+stop_set = set(stop)\n for _ in range(times):\n     for w in text.split():\n-        if w.lower() not in stop:\n+        if w.lower() not in stop_set:\n             kept += 1\n print(kept)"
@@ -72,18 +72,18 @@
       "index": 1,
       "origin": "rule:membership:frozenset",
       "tokens": 0,
-      "median_ns": 21710738,
+      "median_ns": 34987317,
       "times_ns": [
-        21710738,
-        21758487,
-        21843708,
-        21626403,
-        21527141
+        37965320,
+        34987317,
+        30824509,
+        30112933,
+        35844006
       ],
-      "peak_rss_kb": 16436,
-      "speedup": 1.1209018320795912,
-      "reward": 0.970241846745932,
-      "decision": "keep",
+      "peak_rss_kb": 16252,
+      "speedup": 0.7005411132268302,
+      "reward": 0.5516405512918192,
+      "decision": "reject_margin",
       "detail": null,
       "change": "@@ -7,7 +7,8 @@\n text = sys.stdin.read()\n kept = 0\n+stop_set = frozenset(stop)\n for _ in range(times):\n     for w in text.split():\n-        if w.lower() not in stop:\n+        if w.lower() not in stop_set:\n             kept += 1\n print(kept)"
     }
@@ -92,12 +92,12 @@
     {
       "gen": 1,
       "evaluated": 2,
-      "kept": 2,
+      "kept": 1,
       "new_elite": true,
-      "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 21710738,
-      "best_peak_rss_kb": 16436,
-      "best_reward": 0.970241846745932,
+      "best_origin": "rule:membership:set",
+      "best_median_ns": 21917969,
+      "best_peak_rss_kb": 16388,
+      "best_reward": 0.9681164188499044,
       "tokens": 0
     },
     {
@@ -105,44 +105,44 @@
       "evaluated": 0,
       "kept": 0,
       "new_elite": false,
-      "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 21710738,
-      "best_peak_rss_kb": 16436,
-      "best_reward": 0.970241846745932,
+      "best_origin": "rule:membership:set",
+      "best_median_ns": 21917969,
+      "best_peak_rss_kb": 16388,
+      "best_reward": 0.9681164188499044,
       "tokens": 0
     }
   ],
   "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
   "confirmation": {
-    "origin": "rule:membership:frozenset",
+    "origin": "rule:membership:set",
     "rounds": 10,
     "baseline_times_ns": [
-      24868660,
-      24671526,
-      24278511,
-      24052031,
-      24640856,
-      25428318,
-      25067685,
-      25043544,
-      24544366,
-      23896503
+      24670694,
+      24696285,
+      24501880,
+      24275685,
+      26921774,
+      25573137,
+      23917884,
+      24750756,
+      24249243,
+      23988885
     ],
     "candidate_times_ns": [
-      22182198,
-      21905004,
-      21611398,
-      22016386,
-      21471753,
-      22834546,
-      23688201,
-      22783638,
-      22430182,
-      21923408
+      21957385,
+      21603196,
+      21617499,
+      21493933,
+      21284468,
+      22772620,
+      21202682,
+      22295638,
+      22296464,
+      21266602
     ],
-    "baseline_median_ns": 24656191,
-    "candidate_median_ns": 22099292,
-    "speedup": 1.1157004939343758,
+    "baseline_median_ns": 24586287,
+    "candidate_median_ns": 21610347,
+    "speedup": 1.1377090335476798,
     "candidate_wins": 10,
     "seeds": [
       1,
@@ -161,22 +161,22 @@
     "detail": null
   },
   "best": {
-    "origin": "rule:membership:frozenset",
-    "median_ns": 22099292,
-    "peak_rss_kb": 16436,
-    "speedup": 1.1157004939343758,
+    "origin": "rule:membership:set",
+    "median_ns": 21610347,
+    "peak_rss_kb": 16388,
+    "speedup": 1.1377090335476798,
     "confirmed": true,
     "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
     "model_rewrite": false
   },
-  "best_source": "# Reads stdin and takes a repeat count from argv; exits with status 3 when\n# asked to, and reports to stderr.\nimport sys\n\ntimes = int(sys.argv[1]) if len(sys.argv) > 1 else 1\nstop = [\"the\", \"a\", \"of\", \"and\", \"to\", \"in\"]\ntext = sys.stdin.read()\nkept = 0\nstop_set = frozenset(stop)\nfor _ in range(times):\n    for w in text.split():\n        if w.lower() not in stop_set:\n            kept += 1\nprint(kept)\nprint(\"processed\", times, \"rounds\", file=sys.stderr)\nif len(sys.argv) > 2 and sys.argv[2] == \"fail\":\n    sys.exit(3)\n",
+  "best_source": "# Reads stdin and takes a repeat count from argv; exits with status 3 when\n# asked to, and reports to stderr.\nimport sys\n\ntimes = int(sys.argv[1]) if len(sys.argv) > 1 else 1\nstop = [\"the\", \"a\", \"of\", \"and\", \"to\", \"in\"]\ntext = sys.stdin.read()\nkept = 0\nstop_set = set(stop)\nfor _ in range(times):\n    for w in text.split():\n        if w.lower() not in stop_set:\n            kept += 1\nprint(kept)\nprint(\"processed\", times, \"rounds\", file=sys.stderr)\nif len(sys.argv) > 2 and sys.argv[2] == \"fail\":\n    sys.exit(3)\n",
   "notes": [],
   "timings": {
-    "project_ns": 81374,
-    "parse_ns": 42742,
-    "policy_ns": 17676,
+    "project_ns": 85007,
+    "parse_ns": 41541,
+    "policy_ns": 16676,
     "deps_ns": 0,
-    "propose_ns": 551453,
-    "search_ns": 2076019286
+    "propose_ns": 605030,
+    "search_ns": 2215092153
   }
 }

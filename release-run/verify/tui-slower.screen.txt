@@ -1,11 +1,12 @@
 ┌ aco 0.1.0 ───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ file fixtures/slower.py   sandbox unshare   proposer rules                                                           │
+│ code 1 file · 11 lines   packages none (standard library only)                                                       │
 │ search 3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs                                                     │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ progress ────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │█████████████████████████████████████████████████████████done ████████████████████████████████████████████████████████│
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ best median per gen · 229.9 ms ──────┐┌ peak RSS · 15.1 MB ──────────────────┐┌ tokens per gen · 0 ──────────────────┐
+┌ best median per gen · 252.1 ms ──────┐┌ peak RSS · 15.5 MB ──────────────────┐┌ tokens per gen · 0 ──────────────────┐
 │██                                    ││██                                    ││                                      │
 │██                                    ││██                                    ││                                      │
 │██                                    ││██                                    ││                                      │
@@ -13,15 +14,14 @@
 └──────────────────────────────────────┘└──────────────────────────────────────┘└──────────────────────────────────────┘
 ┌ candidates · 3 rows ─────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ gen  candidate                                median       RSS  tokens   speedup  decision                           │
-│ 0    baseline                               229.9 ms   15.1 MB       0     1.00x  reference                          │
-│ 1    rule:membership:set                    304.5 ms   15.4 MB       0     0.76x  rejected: not 5% faster            │
-│ 1    rule:membership:frozenset              298.7 ms   15.2 MB       0     0.77x  rejected: not 5% faster            │
-│                                                                                                                      │
+│ 0    baseline                               252.1 ms   15.5 MB       0     1.00x  reference                          │
+│ 1    rule:membership:set                    331.8 ms   15.5 MB       0     0.76x  rejected: not 5% faster            │
+│ 1    rule:membership:frozenset              316.6 ms   15.5 MB       0     0.80x  rejected: not 5% faster            │
 │                                                                                                                      │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ summary ─────────────────────────────────────┐┌ diff · original → best ──────────────────────────────────────────────┐
 │ – no faster version, original kept           ││ no change: the output file is the original                           │
-│ baseline   229.9 ms                          ││                                                                      │
+│ baseline   252.1 ms                          ││                                                                      │
 │ reason     no candidate matched the oracle   ││                                                                      │
 │ and cleared the time margin                  ││                                                                      │
 │ searched   2 candidates, 0 kept              ││                                                                      │

@@ -32,15 +32,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 142170514,
+    "median_ns": 137285359,
     "times_ns": [
-      139692423,
-      142150731,
-      143792210,
-      143371098,
-      142170514
+      136112485,
+      137285359,
+      138332388,
+      136113050,
+      137389360
     ],
-    "peak_rss_kb": 16052,
+    "peak_rss_kb": 15852,
     "exit_code": 0,
     "stderr": null
   },
@@ -50,17 +50,17 @@
       "index": 0,
       "origin": "rule:bubble-sort:sorted",
       "tokens": 0,
-      "median_ns": 122806,
+      "median_ns": 117730,
       "times_ns": [
-        165648,
-        129060,
-        116799,
-        115869,
-        122806
+        128763,
+        120134,
+        117730,
+        114711,
+        113789
       ],
-      "peak_rss_kb": 15960,
-      "speedup": 1157.6837776655864,
-      "reward": 1157.534637371542,
+      "peak_rss_kb": 15964,
+      "speedup": 1166.103448568759,
+      "reward": 1165.9523887655796,
       "decision": "keep",
       "detail": null,
       "change": "@@ -2,7 +2,4 @@\n xs = [(i * 7919) % 2000 for i in range(1800)]\n n = len(xs)\n-for i in range(n):\n-    for j in range(n - 1 - i):\n-        if xs[j] > xs[j + 1]:\n-            xs[j], xs[j + 1] = xs[j + 1], xs[j]\n+xs[:] = sorted(xs)\n print(xs[:5], xs[-5:])"
@@ -70,17 +70,17 @@
       "index": 1,
       "origin": "rule:bubble-sort:list.sort",
       "tokens": 0,
-      "median_ns": 206589,
+      "median_ns": 116081,
       "times_ns": [
-        221017,
-        206589,
-        198727,
-        210326,
-        203845
+        121531,
+        124351,
+        114960,
+        109032,
+        116081
       ],
-      "peak_rss_kb": 15868,
-      "speedup": 688.1804645939523,
-      "reward": 688.0321840058635,
+      "peak_rss_kb": 15840,
+      "speedup": 1182.6686451701828,
+      "reward": 1182.5187587205235,
       "decision": "keep",
       "detail": null,
       "change": "@@ -2,7 +2,4 @@\n xs = [(i * 7919) % 2000 for i in range(1800)]\n n = len(xs)\n-for i in range(n):\n-    for j in range(n - 1 - i):\n-        if xs[j] > xs[j + 1]:\n-            xs[j], xs[j + 1] = xs[j + 1], xs[j]\n+xs.sort()\n print(xs[:5], xs[-5:])"
@@ -92,10 +92,10 @@
       "evaluated": 2,
       "kept": 2,
       "new_elite": true,
-      "best_origin": "rule:bubble-sort:sorted",
-      "best_median_ns": 122806,
-      "best_peak_rss_kb": 15960,
-      "best_reward": 1157.534637371542,
+      "best_origin": "rule:bubble-sort:list.sort",
+      "best_median_ns": 116081,
+      "best_peak_rss_kb": 15840,
+      "best_reward": 1182.5187587205235,
       "tokens": 0
     },
     {
@@ -103,44 +103,44 @@
       "evaluated": 0,
       "kept": 0,
       "new_elite": false,
-      "best_origin": "rule:bubble-sort:sorted",
-      "best_median_ns": 122806,
-      "best_peak_rss_kb": 15960,
-      "best_reward": 1157.534637371542,
+      "best_origin": "rule:bubble-sort:list.sort",
+      "best_median_ns": 116081,
+      "best_peak_rss_kb": 15840,
+      "best_reward": 1182.5187587205235,
       "tokens": 0
     }
   ],
   "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
   "confirmation": {
-    "origin": "rule:bubble-sort:sorted",
+    "origin": "rule:bubble-sort:list.sort",
     "rounds": 10,
     "baseline_times_ns": [
-      138938404,
-      154804785,
-      161862131,
-      153005944,
-      154335553,
-      151033278,
-      138765059,
-      154201463,
-      153698379,
-      142551213
+      149500296,
+      145571191,
+      135482279,
+      134952613,
+      146496215,
+      139140264,
+      134162005,
+      143372168,
+      149309254,
+      135762746
     ],
     "candidate_times_ns": [
-      125748,
-      133851,
-      154321,
-      139670,
-      182785,
-      136447,
-      172169,
-      143762,
-      178790,
-      132025
+      118475,
+      117957,
+      120539,
+      122875,
+      123387,
+      125772,
+      122279,
+      119929,
+      121660,
+      129198
     ],
-    "baseline_median_ns": 153352161,
-    "candidate_median_ns": 141716,
-    "speedup": 1082.1090138022523,
+    "baseline_median_ns": 141256216,
+    "candidate_median_ns": 121969,
+    "speedup": 1158.1321155375547,
     "candidate_wins": 10,
     "seeds": [
       1,
@@ -159,22 +159,22 @@
     "detail": null
   },
   "best": {
-    "origin": "rule:bubble-sort:sorted",
-    "median_ns": 141716,
-    "peak_rss_kb": 15960,
-    "speedup": 1082.1090138022523,
+    "origin": "rule:bubble-sort:list.sort",
+    "median_ns": 121969,
+    "peak_rss_kb": 15840,
+    "speedup": 1158.1321155375547,
     "confirmed": true,
     "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
     "model_rewrite": false
   },
-  "best_source": "# UTF-8 with a byte-order mark\nxs = [(i * 7919) % 2000 for i in range(1800)]\nn = len(xs)\nxs[:] = sorted(xs)\nprint(xs[:5], xs[-5:])\n",
+  "best_source": "# UTF-8 with a byte-order mark\nxs = [(i * 7919) % 2000 for i in range(1800)]\nn = len(xs)\nxs.sort()\nprint(xs[:5], xs[-5:])\n",
   "notes": [],
   "timings": {
-    "project_ns": 67752,
-    "parse_ns": 32532,
-    "policy_ns": 14518,
+    "project_ns": 56580,
+    "parse_ns": 28641,
+    "policy_ns": 13833,
     "deps_ns": 0,
-    "propose_ns": 446844,
-    "search_ns": 4929902634
+    "propose_ns": 344081,
+    "search_ns": 4534705501
   }
 }

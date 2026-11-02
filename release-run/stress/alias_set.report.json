@@ -32,15 +32,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 4392821,
+    "median_ns": 4362878,
     "times_ns": [
-      4721349,
-      4633815,
-      4392821,
-      4242455,
-      4388196
+      4265560,
+      4388999,
+      4385830,
+      4262243,
+      4362878
     ],
-    "peak_rss_kb": 15852,
+    "peak_rss_kb": 15848,
     "exit_code": 0,
     "stderr": null
   },
@@ -52,8 +52,8 @@
       "kept": 0,
       "new_elite": false,
       "best_origin": "baseline",
-      "best_median_ns": 4392821,
-      "best_peak_rss_kb": 15852,
+      "best_median_ns": 4362878,
+      "best_peak_rss_kb": 15848,
       "best_reward": 0.85,
       "tokens": 0
     }
@@ -62,8 +62,8 @@
   "confirmation": null,
   "best": {
     "origin": "baseline",
-    "median_ns": 4392821,
-    "peak_rss_kb": 15852,
+    "median_ns": 4362878,
+    "peak_rss_kb": 15848,
     "speedup": 1.0,
     "confirmed": false,
     "reason": "no candidate matched the oracle and cleared the time margin",
@@ -72,11 +72,11 @@
   "best_source": "# `seen` is mutated through an alias inside the loop, so membership in a\n# set built before the loop would be stale. The rule must not fire.\nseen = []\nalias = seen\nout = 0\nfor i in range(3000):\n    if i % 50 in seen:\n        out += 1\n    alias.append(i % 37)\nprint(out)\n",
   "notes": [],
   "timings": {
-    "project_ns": 48057,
-    "parse_ns": 15784,
-    "policy_ns": 8454,
+    "project_ns": 52273,
+    "parse_ns": 21965,
+    "policy_ns": 11965,
     "deps_ns": 0,
-    "propose_ns": 102450,
-    "search_ns": 67540542
+    "propose_ns": 116286,
+    "search_ns": 66659640
   }
 }

@@ -760,7 +760,8 @@ def real_model():
                  for c in v["candidates"]]
         toks = sum(c["tokens"] for c in v["candidates"])
         record("real model", f"{model}: fixtures/{name}.py", p.returncode == 0,
-               f"{outcome(v)}; {len(v['candidates'])} candidates, {toks} tokens, model time "
+               f"{outcome(v)}{' (flagged for review)' if v['best'].get('model_rewrite') else ''}; "
+               f"{len(v['candidates'])} candidates, {toks} tokens, model time "
                f"{v['timings']['propose_ns']/1e9:.1f} s, wall {secs:.0f} s; " + "; ".join(cands))
 
 

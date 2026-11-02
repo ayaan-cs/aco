@@ -1,11 +1,12 @@
 ┌ aco 0.1.0 ───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ file fixtures/lookup.py   sandbox unshare   proposer rules                                                           │
+│ code 1 file · 9 lines   packages none (standard library only)                                                        │
 │ search 3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs                                                     │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ progress ────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │█████████████████████████████████████████████████████████done ████████████████████████████████████████████████████████│
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ best median per gen · 1.300 ms ──────┐┌ peak RSS · 15.6 MB ──────────────────┐┌ tokens per gen · 0 ──────────────────┐
+┌ best median per gen · 1.334 ms ──────┐┌ peak RSS · 15.7 MB ──────────────────┐┌ tokens per gen · 0 ──────────────────┐
 │█                                     ││▇██                                   ││                                      │
 │█                                     ││███                                   ││                                      │
 │█                                     ││███                                   ││                                      │
@@ -13,16 +14,15 @@
 └──────────────────────────────────────┘└──────────────────────────────────────┘└──────────────────────────────────────┘
 ┌ candidates · 4 rows ─────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ gen  candidate                                median       RSS  tokens   speedup  decision                           │
-│ 0    baseline                               250.1 ms   15.3 MB       0     1.00x  reference                          │
-│ 1    rule:membership:set                    1.322 ms   15.6 MB       0    189.2x  kept                               │
-│ 1    rule:membership:frozenset              1.301 ms   15.6 MB       0    192.3x  kept                               │
-│ ✓    confirm rule:membership:frozenset      1.404 ms                      175.2x  confirmed vs 245.9 ms              │
-│                                                                                                                      │
+│ 0    baseline                               249.5 ms   15.6 MB       0     1.00x  reference                          │
+│ 1    rule:membership:set                    1.416 ms   15.7 MB       0    176.2x  kept                               │
+│ 1    rule:membership:frozenset              1.334 ms   15.7 MB       0    186.9x  kept                               │
+│ ✓    confirm rule:membership:frozenset      1.485 ms                      165.6x  confirmed vs 246.0 ms              │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ summary ─────────────────────────────────────┐┌ diff · original → best ──────────────────────────────────────────────┐
-│ ✓ 175.2x faster, confirmed                   ││ @@ -3,6 +3,7 @@                                                      │
-│ baseline   245.9 ms  10 runs                 ││  allowed = [i * 7 for i in range(2000)]                              │
-│ optimized  1.404 ms                          ││  hits = 0                                                            │
+│ ✓ 165.6x faster, confirmed                   ││ @@ -3,6 +3,7 @@                                                      │
+│ baseline   246.0 ms  10 runs                 ││  allowed = [i * 7 for i in range(2000)]                              │
+│ optimized  1.485 ms                          ││  hits = 0                                                            │
 │ winner     rule:membership:frozenset         ││ +allowed_set = frozenset(allowed)                                    │
 │ searched   2 candidates, 2 kept              ││  for k in range(35000):                                              │
 │ best.py    …se-run/verify/tui/lookup.best.py ││ -    if k in allowed:                                                │
@@ -33,4 +33,4 @@
 │                                              ││                                                                      │
 │                                              ││                                                                      │
 └──────────────────────────────────────────────┘└──────────────────────────────────────────────────────────────────────┘
- best: rule:membership:frozenset at 175.2x                                                            q quit · ↑↓ scroll
+ best: rule:membership:frozenset at 165.6x                                                            q quit · ↑↓ scroll

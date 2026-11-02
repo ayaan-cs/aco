@@ -32,15 +32,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 244493667,
+    "median_ns": 241492693,
     "times_ns": [
-      243362907,
-      243339417,
-      244493667,
-      247633171,
-      249899875
+      242607109,
+      241381496,
+      242368267,
+      241492693,
+      240717272
     ],
-    "peak_rss_kb": 15900,
+    "peak_rss_kb": 15964,
     "exit_code": 0,
     "stderr": null
   },
@@ -50,17 +50,17 @@
       "index": 0,
       "origin": "rule:membership:set",
       "tokens": 0,
-      "median_ns": 1379779,
+      "median_ns": 1354715,
       "times_ns": [
-        1461980,
-        1531795,
-        1379779,
-        1347908,
-        1367823
+        1368636,
+        1354715,
+        1348667,
+        1343198,
+        1363005
       ],
-      "peak_rss_kb": 16124,
-      "speedup": 177.1977012260659,
-      "reward": 177.04558801851874,
+      "peak_rss_kb": 16128,
+      "speedup": 178.2608836544956,
+      "reward": 178.10934268731944,
       "decision": "keep",
       "detail": null,
       "change": "@@ -3,6 +3,7 @@\n allowed = [i * 7 for i in range(2000)]\n hits = 0\n+allowed_set = set(allowed)\n for k in range(35000):\n-    if k in allowed:\n+    if k in allowed_set:\n         hits += 1\n "
@@ -70,17 +70,17 @@
       "index": 1,
       "origin": "rule:membership:frozenset",
       "tokens": 0,
-      "median_ns": 1364354,
+      "median_ns": 1346437,
       "times_ns": [
-        1410479,
-        1361110,
-        1366630,
-        1364354,
-        1361080
+        1478652,
+        1347238,
+        1330789,
+        1338141,
+        1346437
       ],
-      "peak_rss_kb": 16180,
-      "speedup": 179.20104826166815,
-      "reward": 179.0484067522342,
+      "peak_rss_kb": 16128,
+      "speedup": 179.3568455115241,
+      "reward": 179.20530454434797,
       "decision": "keep",
       "detail": null,
       "change": "@@ -3,6 +3,7 @@\n allowed = [i * 7 for i in range(2000)]\n hits = 0\n+allowed_set = frozenset(allowed)\n for k in range(35000):\n-    if k in allowed:\n+    if k in allowed_set:\n         hits += 1\n "
@@ -93,9 +93,9 @@
       "kept": 2,
       "new_elite": true,
       "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 1364354,
-      "best_peak_rss_kb": 16180,
-      "best_reward": 179.0484067522342,
+      "best_median_ns": 1346437,
+      "best_peak_rss_kb": 16128,
+      "best_reward": 179.20530454434797,
       "tokens": 0
     },
     {
@@ -104,9 +104,9 @@
       "kept": 0,
       "new_elite": false,
       "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 1364354,
-      "best_peak_rss_kb": 16180,
-      "best_reward": 179.0484067522342,
+      "best_median_ns": 1346437,
+      "best_peak_rss_kb": 16128,
+      "best_reward": 179.20530454434797,
       "tokens": 0
     }
   ],
@@ -115,32 +115,32 @@
     "origin": "rule:membership:frozenset",
     "rounds": 10,
     "baseline_times_ns": [
-      244547281,
-      246044348,
-      244359166,
-      246404244,
-      244771934,
-      244213283,
-      301456616,
-      249644164,
-      246147150,
-      273181903
+      241908207,
+      244508470,
+      247629228,
+      247321947,
+      258197537,
+      240907851,
+      243444890,
+      243902987,
+      243824609,
+      244746031
     ],
     "candidate_times_ns": [
-      1348235,
-      1552766,
-      1340961,
-      1331851,
-      1323625,
-      1449570,
-      2376893,
-      1312211,
-      1328788,
-      1522796
+      1355723,
+      1551225,
+      1310120,
+      1359183,
+      1337620,
+      1450820,
+      1382539,
+      1407744,
+      2169086,
+      1326609
     ],
-    "baseline_median_ns": 246095749,
-    "candidate_median_ns": 1344598,
-    "speedup": 183.0255206388824,
+    "baseline_median_ns": 244205728,
+    "candidate_median_ns": 1370861,
+    "speedup": 178.14040081379514,
     "candidate_wins": 10,
     "seeds": [
       1,
@@ -160,9 +160,9 @@
   },
   "best": {
     "origin": "rule:membership:frozenset",
-    "median_ns": 1344598,
-    "peak_rss_kb": 16180,
-    "speedup": 183.0255206388824,
+    "median_ns": 1370861,
+    "peak_rss_kb": 16128,
+    "speedup": 178.14040081379514,
     "confirmed": true,
     "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
     "model_rewrite": false
@@ -170,11 +170,11 @@
   "best_source": "# Repeated membership tests against a list inside a loop.\n\nallowed = [i * 7 for i in range(2000)]\nhits = 0\nallowed_set = frozenset(allowed)\nfor k in range(35000):\n    if k in allowed_set:\n        hits += 1\n\nprint(hits)\n",
   "notes": [],
   "timings": {
-    "project_ns": 21910,
-    "parse_ns": 13800,
-    "policy_ns": 4342,
+    "project_ns": 29868,
+    "parse_ns": 25286,
+    "policy_ns": 9015,
     "deps_ns": 0,
-    "propose_ns": 400693,
-    "search_ns": 7611427772
+    "propose_ns": 324090,
+    "search_ns": 7318197318
   }
 }

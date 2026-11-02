@@ -25,7 +25,7 @@
         "bytes": 390
       }
     ],
-    "requirements": "/workspace/aco/fixtures/stress/numpy_project/requirements.txt",
+    "requirements": "fixtures/stress/numpy_project/requirements.txt",
     "packages": [
       {
         "name": "more-itertools",
@@ -41,15 +41,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 199652388,
+    "median_ns": 193574911,
     "times_ns": [
-      199652388,
-      201577646,
-      197870514,
-      199742382,
-      193695422
+      195726382,
+      193136648,
+      192174243,
+      193574911,
+      194691012
     ],
-    "peak_rss_kb": 38408,
+    "peak_rss_kb": 38336,
     "exit_code": 0,
     "stderr": null
   },
@@ -59,17 +59,17 @@
       "index": 0,
       "origin": "rule:membership:set",
       "tokens": 0,
-      "median_ns": 4403471,
+      "median_ns": 4323656,
       "times_ns": [
-        4403471,
-        4439794,
-        4332183,
-        4465461,
-        4347417
+        4316241,
+        4323656,
+        4443782,
+        4296124,
+        4363815
       ],
-      "peak_rss_kb": 38288,
-      "speedup": 45.33977582684205,
-      "reward": 45.19024447920614,
+      "peak_rss_kb": 38076,
+      "speedup": 44.77111754496657,
+      "reward": 44.6221348655008,
       "decision": "keep",
       "detail": null,
       "change": "@@ -8,7 +8,8 @@\n labels = list(range(0, 20000, 7))\n hits = 0\n+labels_set = set(labels)\n for chunk in chunked(range(20000), 500):\n     for v in chunk:\n-        if v in labels:\n+        if v in labels_set:\n             hits += 1\n print(int(col.max()), sum(flagged), hits)"
@@ -79,17 +79,17 @@
       "index": 1,
       "origin": "rule:membership:frozenset",
       "tokens": 0,
-      "median_ns": 4312015,
+      "median_ns": 4376799,
       "times_ns": [
-        4312015,
-        4514861,
-        4261338,
-        4279702,
-        4540832
+        4423950,
+        4462092,
+        4216285,
+        4376799,
+        4297706
       ],
-      "peak_rss_kb": 38296,
-      "speedup": 46.3014131444348,
-      "reward": 46.151850553307945,
+      "peak_rss_kb": 38236,
+      "speedup": 44.227507591735424,
+      "reward": 44.07789886886397,
       "decision": "keep",
       "detail": null,
       "change": "@@ -8,7 +8,8 @@\n labels = list(range(0, 20000, 7))\n hits = 0\n+labels_set = frozenset(labels)\n for chunk in chunked(range(20000), 500):\n     for v in chunk:\n-        if v in labels:\n+        if v in labels_set:\n             hits += 1\n print(int(col.max()), sum(flagged), hits)"
@@ -101,10 +101,10 @@
       "evaluated": 2,
       "kept": 2,
       "new_elite": true,
-      "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 4312015,
-      "best_peak_rss_kb": 38296,
-      "best_reward": 46.151850553307945,
+      "best_origin": "rule:membership:set",
+      "best_median_ns": 4323656,
+      "best_peak_rss_kb": 38076,
+      "best_reward": 44.6221348655008,
       "tokens": 0
     },
     {
@@ -112,44 +112,44 @@
       "evaluated": 0,
       "kept": 0,
       "new_elite": false,
-      "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 4312015,
-      "best_peak_rss_kb": 38296,
-      "best_reward": 46.151850553307945,
+      "best_origin": "rule:membership:set",
+      "best_median_ns": 4323656,
+      "best_peak_rss_kb": 38076,
+      "best_reward": 44.6221348655008,
       "tokens": 0
     }
   ],
   "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
   "confirmation": {
-    "origin": "rule:membership:frozenset",
+    "origin": "rule:membership:set",
     "rounds": 10,
     "baseline_times_ns": [
-      194282392,
-      192515312,
-      197087332,
-      195730727,
-      195209627,
-      191189111,
-      193283803,
-      195824511,
-      207162440,
-      205939348
+      198038281,
+      196156096,
+      191286364,
+      194291207,
+      194036187,
+      193028254,
+      193756433,
+      191914736,
+      191443309,
+      193933200
     ],
     "candidate_times_ns": [
-      4283576,
-      4735290,
-      4491618,
-      4223183,
-      4453860,
-      6464877,
-      4261061,
-      4191491,
-      4199875,
-      4349124
+      4261571,
+      7132467,
+      4349720,
+      4289883,
+      4415422,
+      4402013,
+      4270649,
+      4314045,
+      4291237,
+      4227419
     ],
-    "baseline_median_ns": 195470177,
-    "candidate_median_ns": 4316350,
-    "speedup": 45.28598862464814,
+    "baseline_median_ns": 193844816,
+    "candidate_median_ns": 4302641,
+    "speedup": 45.0525191388266,
     "candidate_wins": 10,
     "seeds": [
       1,
@@ -168,22 +168,22 @@
     "detail": null
   },
   "best": {
-    "origin": "rule:membership:frozenset",
-    "median_ns": 4316350,
-    "peak_rss_kb": 38296,
-    "speedup": 45.28598862464814,
+    "origin": "rule:membership:set",
+    "median_ns": 4302641,
+    "peak_rss_kb": 38076,
+    "speedup": 45.0525191388266,
     "confirmed": true,
     "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
     "model_rewrite": false
   },
-  "best_source": "import numpy as np\nfrom more_itertools import chunked\n\nrng = np.random.default_rng(1234)\nm = rng.integers(0, 100, size=(200, 200))\ncol = (m @ m.T).sum(axis=0)\nflagged = [int(v) % 1000 for v in col]\nlabels = list(range(0, 20000, 7))\nhits = 0\nlabels_set = frozenset(labels)\nfor chunk in chunked(range(20000), 500):\n    for v in chunk:\n        if v in labels_set:\n            hits += 1\nprint(int(col.max()), sum(flagged), hits)\n",
+  "best_source": "import numpy as np\nfrom more_itertools import chunked\n\nrng = np.random.default_rng(1234)\nm = rng.integers(0, 100, size=(200, 200))\ncol = (m @ m.T).sum(axis=0)\nflagged = [int(v) % 1000 for v in col]\nlabels = list(range(0, 20000, 7))\nhits = 0\nlabels_set = set(labels)\nfor chunk in chunked(range(20000), 500):\n    for v in chunk:\n        if v in labels_set:\n            hits += 1\nprint(int(col.max()), sum(flagged), hits)\n",
   "notes": [],
   "timings": {
-    "project_ns": 99909,
-    "parse_ns": 37596,
-    "policy_ns": 14540,
-    "deps_ns": 11088994,
-    "propose_ns": 600835,
-    "search_ns": 7837416901
+    "project_ns": 100279,
+    "parse_ns": 40789,
+    "policy_ns": 17092,
+    "deps_ns": 11267795,
+    "propose_ns": 614575,
+    "search_ns": 7660198436
   }
 }

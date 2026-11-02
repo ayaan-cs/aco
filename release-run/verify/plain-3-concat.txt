@@ -1,21 +1,23 @@
 aco 0.1.0 · fixtures/concat.py
+  code      1 file · 7 lines
+  packages  none (standard library only)
   sandbox   unshare
   proposer  rules
   search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
 
-  gen candidate                          median      RSS tokens  speedup  decision
-    0 baseline                         261.0 ms  15.6 MB      0    1.00x  reference
-    1 rule:concat:join                 4.523 ms  17.5 MB      0    57.7x  kept
-  ─── gen 1: 1 evaluated, 1 kept · new elite rule:concat:join at 4.523 ms
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           268.9 ms  16.0 MB      0    1.00x  reference
+    1 rule:concat:join                   4.388 ms  17.9 MB      0    61.3x  kept
+  ─── gen 1: 1 evaluated, 1 kept · new elite rule:concat:join at 4.388 ms
   ─── gen 2: no new candidates · elite unchanged (rule:concat:join)
   ─── stop: search exhausted: the proposer has no new candidates for the elite
 
-  confirm rule:concat:join against the baseline, 10 interleaved runs in fresh sandboxes
-          baseline 262.9 ms · candidate 4.734 ms · 55.5x  ✓ confirmed
+  confirm rule:concat:join against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 268.2 ms · candidate 4.677 ms · 57.3x · won 10/10  ✓ confirmed
 
-  ✓ fixtures/concat.py  55.5x faster, confirmed
-    baseline   262.9 ms   median of 10 interleaved runs (search phase: 261.0 ms)
-    optimized  4.734 ms   rule:concat:join
+  ✓ fixtures/concat.py  57.3x faster, confirmed
+    baseline   268.2 ms   median of 10 interleaved runs (search phase: 268.9 ms)
+    optimized  4.677 ms   rule:concat:join
     searched   1 candidates, 1 kept
     stopped    search exhausted: the proposer has no new candidates for the elite
     wrote      /workspace/aco/release-run/verify/plain-3/concat.best.py

@@ -1,22 +1,24 @@
 aco 0.1.0 · fixtures/bubble.py
+  code      1 file · 20 lines
+  packages  none (standard library only)
   sandbox   unshare
   proposer  rules
   search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
 
-  gen candidate                          median      RSS tokens  speedup  decision
-    0 baseline                         317.5 ms  16.0 MB      0    1.00x  reference
-    1 rule:bubble-sort:sorted          771.5 µs  16.1 MB      0   411.6x  kept
-    1 rule:bubble-sort:list.sort       1.123 ms  16.0 MB      0   282.8x  kept
-  ─── gen 1: 2 evaluated, 2 kept · new elite rule:bubble-sort:sorted at 771.5 µs
-  ─── gen 2: no new candidates · elite unchanged (rule:bubble-sort:sorted)
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           319.9 ms  16.3 MB      0    1.00x  reference
+    1 rule:bubble-sort:sorted            996.9 µs  16.3 MB      0   320.9x  kept
+    1 rule:bubble-sort:list.sort         915.9 µs  16.2 MB      0   349.3x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:bubble-sort:list.sort at 915.9 µs
+  ─── gen 2: no new candidates · elite unchanged (rule:bubble-sort:list.sort)
   ─── stop: search exhausted: the proposer has no new candidates for the elite
 
-  confirm rule:bubble-sort:sorted against the baseline, 10 interleaved runs in fresh sandboxes
-          baseline 316.7 ms · candidate 805.0 µs · 393.3x  ✓ confirmed
+  confirm rule:bubble-sort:list.sort against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 317.0 ms · candidate 799.3 µs · 396.6x · won 10/10  ✓ confirmed
 
-  ✓ fixtures/bubble.py  393.3x faster, confirmed
-    baseline   316.7 ms   median of 10 interleaved runs (search phase: 317.5 ms)
-    optimized  805.0 µs   rule:bubble-sort:sorted
+  ✓ fixtures/bubble.py  396.6x faster, confirmed
+    baseline   317.0 ms   median of 10 interleaved runs (search phase: 319.9 ms)
+    optimized  799.3 µs   rule:bubble-sort:list.sort
     searched   2 candidates, 2 kept
     stopped    search exhausted: the proposer has no new candidates for the elite
     wrote      /workspace/aco/release-run/verify/plain-1/bubble.best.py
@@ -28,5 +30,5 @@ aco 0.1.0 · fixtures/bubble.py
       -        for j in range(n - 1 - i):
       -            if xs[j] > xs[j + 1]:
       -                xs[j], xs[j + 1] = xs[j + 1], xs[j]
-      +    xs[:] = sorted(xs)
+      +    xs.sort()
            return xs

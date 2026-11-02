@@ -32,15 +32,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 250116365,
+    "median_ns": 241562235,
     "times_ns": [
-      265685162,
-      249288113,
-      248433686,
-      274147676,
-      250116365
+      256895591,
+      258685213,
+      241562235,
+      238278699,
+      234898751
     ],
-    "peak_rss_kb": 15976,
+    "peak_rss_kb": 15888,
     "exit_code": 0,
     "stderr": null
   },
@@ -50,17 +50,17 @@
       "index": 0,
       "origin": "rule:membership:set",
       "tokens": 0,
-      "median_ns": 340989171,
+      "median_ns": 339675870,
       "times_ns": [
-        349442804,
-        336114364,
-        340989171,
-        347844293,
-        333190537
+        327154743,
+        363397422,
+        332409338,
+        362164627,
+        339675870
       ],
-      "peak_rss_kb": 15856,
-      "speedup": 0.7335023697864,
-      "reward": 0.5846290598214526,
+      "peak_rss_kb": 15888,
+      "speedup": 0.7111551226762148,
+      "reward": 0.5611551226762148,
       "decision": "reject_margin",
       "detail": null,
       "change": "@@ -5,6 +5,7 @@\n for row in range(1200000):\n     small = [row % 3, 5, 9]\n+    small_set = set(small)\n     for v in (1, 2, 3):\n-        if v in small:\n+        if v in small_set:\n             hits += 1\n "
@@ -70,17 +70,17 @@
       "index": 1,
       "origin": "rule:membership:frozenset",
       "tokens": 0,
-      "median_ns": 336202598,
+      "median_ns": 329673792,
       "times_ns": [
-        372840671,
-        344658798,
-        332646047,
-        334088396,
-        336202598
+        329673792,
+        334771330,
+        324263824,
+        319529248,
+        344065481
       ],
-      "peak_rss_kb": 15836,
-      "speedup": 0.7439453665375899,
-      "reward": 0.5952598382451513,
+      "peak_rss_kb": 15884,
+      "speedup": 0.7327310840650627,
+      "reward": 0.5827688484155159,
       "decision": "reject_margin",
       "detail": null,
       "change": "@@ -5,6 +5,7 @@\n for row in range(1200000):\n     small = [row % 3, 5, 9]\n+    small_set = frozenset(small)\n     for v in (1, 2, 3):\n-        if v in small:\n+        if v in small_set:\n             hits += 1\n "
@@ -93,8 +93,8 @@
       "kept": 0,
       "new_elite": false,
       "best_origin": "baseline",
-      "best_median_ns": 250116365,
-      "best_peak_rss_kb": 15976,
+      "best_median_ns": 241562235,
+      "best_peak_rss_kb": 15888,
       "best_reward": 0.85,
       "tokens": 0
     }
@@ -103,8 +103,8 @@
   "confirmation": null,
   "best": {
     "origin": "baseline",
-    "median_ns": 250116365,
-    "peak_rss_kb": 15976,
+    "median_ns": 241562235,
+    "peak_rss_kb": 15888,
     "speedup": 1.0,
     "confirmed": false,
     "reason": "no candidate matched the oracle and cleared the time margin",
@@ -113,11 +113,11 @@
   "best_source": "# A tight loop where hoisting a set looks clever but costs more than it saves:\n# the list is rebuilt every row and only probed three times.\n\nhits = 0\nfor row in range(1200000):\n    small = [row % 3, 5, 9]\n    for v in (1, 2, 3):\n        if v in small:\n            hits += 1\n\nprint(hits)\n",
   "notes": [],
   "timings": {
-    "project_ns": 23800,
-    "parse_ns": 14426,
-    "policy_ns": 4458,
+    "project_ns": 35890,
+    "parse_ns": 20310,
+    "policy_ns": 6066,
     "deps_ns": 0,
-    "propose_ns": 210734,
-    "search_ns": 3723406246
+    "propose_ns": 223986,
+    "search_ns": 3644798662
   }
 }

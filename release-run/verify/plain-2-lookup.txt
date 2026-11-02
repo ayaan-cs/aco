@@ -1,22 +1,24 @@
 aco 0.1.0 · fixtures/lookup.py
+  code      1 file · 9 lines
+  packages  none (standard library only)
   sandbox   unshare
   proposer  rules
   search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
 
-  gen candidate                          median      RSS tokens  speedup  decision
-    0 baseline                         242.8 ms  15.3 MB      0    1.00x  reference
-    1 rule:membership:set              1.437 ms  15.4 MB      0   169.0x  kept
-    1 rule:membership:frozenset        1.397 ms  15.4 MB      0   173.9x  kept
-  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:frozenset at 1.397 ms
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           242.1 ms  15.5 MB      0    1.00x  reference
+    1 rule:membership:set                1.386 ms  15.6 MB      0   174.6x  kept
+    1 rule:membership:frozenset          1.353 ms  15.7 MB      0   178.9x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:frozenset at 1.353 ms
   ─── gen 2: no new candidates · elite unchanged (rule:membership:frozenset)
   ─── stop: search exhausted: the proposer has no new candidates for the elite
 
-  confirm rule:membership:frozenset against the baseline, 10 interleaved runs in fresh sandboxes
-          baseline 244.4 ms · candidate 1.361 ms · 179.7x  ✓ confirmed
+  confirm rule:membership:frozenset against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 244.7 ms · candidate 1.425 ms · 171.8x · won 10/10  ✓ confirmed
 
-  ✓ fixtures/lookup.py  179.7x faster, confirmed
-    baseline   244.4 ms   median of 10 interleaved runs (search phase: 242.8 ms)
-    optimized  1.361 ms   rule:membership:frozenset
+  ✓ fixtures/lookup.py  171.8x faster, confirmed
+    baseline   244.7 ms   median of 10 interleaved runs (search phase: 242.1 ms)
+    optimized  1.425 ms   rule:membership:frozenset
     searched   2 candidates, 2 kept
     stopped    search exhausted: the proposer has no new candidates for the elite
     wrote      /workspace/aco/release-run/verify/plain-2/lookup.best.py

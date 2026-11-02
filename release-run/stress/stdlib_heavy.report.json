@@ -32,15 +32,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 34836338,
+    "median_ns": 35037444,
     "times_ns": [
-      35261650,
-      35181185,
-      34836338,
-      34821969,
-      34644595
+      34876554,
+      35099780,
+      34689161,
+      35037444,
+      35784983
     ],
-    "peak_rss_kb": 17952,
+    "peak_rss_kb": 17856,
     "exit_code": 0,
     "stderr": null
   },
@@ -50,17 +50,17 @@
       "index": 0,
       "origin": "rule:concat:join",
       "tokens": 0,
-      "median_ns": 34110348,
+      "median_ns": 35042099,
       "times_ns": [
-        34408785,
-        34184404,
-        34110348,
-        33784115,
-        33985483
+        35042099,
+        36617653,
+        34174078,
+        34250348,
+        35815615
       ],
-      "peak_rss_kb": 20624,
-      "speedup": 1.0212835706044394,
-      "reward": 0.8489573673958832,
+      "peak_rss_kb": 20592,
+      "speedup": 0.9998671597840072,
+      "reward": 0.8268832888162653,
       "decision": "reject_margin",
       "detail": null,
       "change": "@@ -32,7 +32,8 @@\n     top = [heapq.heappop(heap).name for _ in range(3)]\n     pairs = list(itertools.islice(itertools.combinations(range(30), 2), 5))\n-    log = \"\"\n+    log_parts = []\n     for i in range(40000):\n-        log += json.dumps([i % 7])\n+        log_parts.append(json.dumps([i % 7]))\n+    log = \"\".join(log_parts)\n     print(counts.most_common(2), sorted(groups)[:3], list(q), top, pairs, fib(60))\n     print(len(log))"
@@ -73,8 +73,8 @@
       "kept": 0,
       "new_elite": false,
       "best_origin": "baseline",
-      "best_median_ns": 34836338,
-      "best_peak_rss_kb": 17952,
+      "best_median_ns": 35037444,
+      "best_peak_rss_kb": 17856,
       "best_reward": 0.85,
       "tokens": 0
     }
@@ -83,8 +83,8 @@
   "confirmation": null,
   "best": {
     "origin": "baseline",
-    "median_ns": 34836338,
-    "peak_rss_kb": 17952,
+    "median_ns": 35037444,
+    "peak_rss_kb": 17856,
     "speedup": 1.0,
     "confirmed": false,
     "reason": "no candidate matched the oracle and cleared the time margin",
@@ -93,11 +93,11 @@
   "best_source": "# Standard-library heavy code: none of it may confuse import analysis or\n# the rules, and the one slow pattern (string building) is still found.\nimport heapq\nimport itertools\nimport json\nimport re\nfrom collections import Counter, defaultdict, deque\nfrom dataclasses import dataclass, field\nfrom functools import lru_cache\n\n\n@dataclass(order=True)\nclass Job:\n    priority: int\n    name: str = field(compare=False)\n\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\n\ndef main():\n    words = re.findall(r\"[a-z]+\", \"the quick brown fox jumps over the lazy dog \" * 200)\n    counts = Counter(words)\n    groups = defaultdict(list)\n    for w in words[:400]:\n        groups[len(w)].append(w)\n    q = deque(range(10), maxlen=5)\n    heap = [Job(p % 17, \"job%d\" % p) for p in range(300)]\n    heapq.heapify(heap)\n    top = [heapq.heappop(heap).name for _ in range(3)]\n    pairs = list(itertools.islice(itertools.combinations(range(30), 2), 5))\n    log = \"\"\n    for i in range(40000):\n        log += json.dumps([i % 7])\n    print(counts.most_common(2), sorted(groups)[:3], list(q), top, pairs, fib(60))\n    print(len(log))\n\n\nmain()\n",
   "notes": [],
   "timings": {
-    "project_ns": 205050,
-    "parse_ns": 88246,
-    "policy_ns": 40381,
+    "project_ns": 169465,
+    "parse_ns": 83759,
+    "policy_ns": 38270,
     "deps_ns": 0,
-    "propose_ns": 751772,
-    "search_ns": 514613014
+    "propose_ns": 601291,
+    "search_ns": 528812721
   }
 }

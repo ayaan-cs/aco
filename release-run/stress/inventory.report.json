@@ -15,7 +15,7 @@
     "min_baseline_ns": 1000000
   },
   "run": {
-    "project_root": "/workspace/aco/fixtures/stress/project",
+    "project_root": "fixtures/stress/project",
     "target": "main.py",
     "mutated": "shop/inventory.py",
     "files": [
@@ -57,15 +57,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 55672534,
+    "median_ns": 52793212,
     "times_ns": [
-      59803714,
-      54067740,
-      55672534,
-      93276849,
-      54364980
+      53085237,
+      59251121,
+      52363244,
+      52689956,
+      52793212
     ],
-    "peak_rss_kb": 16636,
+    "peak_rss_kb": 16612,
     "exit_code": 0,
     "stderr": null
   },
@@ -75,17 +75,17 @@
       "index": 0,
       "origin": "rule:membership:set",
       "tokens": 0,
-      "median_ns": 2355212,
+      "median_ns": 2434496,
       "times_ns": [
-        2355212,
-        3037039,
-        2492294,
-        2254281,
-        2227224
+        2434496,
+        3053209,
+        2390286,
+        2513199,
+        2282397
       ],
-      "peak_rss_kb": 16720,
-      "speedup": 23.638013902782426,
-      "reward": 23.487256509178195,
+      "peak_rss_kb": 16780,
+      "speedup": 21.685479047819342,
+      "reward": 21.53396207213911,
       "decision": "keep",
       "detail": null,
       "change": "@@ -5,6 +5,7 @@\n     discontinued = [\"sku%d\" % i for i in range(0, 5000, 2)]\n     restock = 0\n+    discontinued_set = set(discontinued)\n     for sku, qty in items:\n-        if sku in discontinued:\n+        if sku in discontinued_set:\n             continue\n         restock += clamp(30 - qty, 0, 30)"
@@ -95,17 +95,17 @@
       "index": 1,
       "origin": "rule:membership:frozenset",
       "tokens": 0,
-      "median_ns": 2354049,
+      "median_ns": 2530104,
       "times_ns": [
-        2405432,
-        3168327,
-        2318742,
-        2317197,
-        2354049
+        2543030,
+        3063020,
+        2362094,
+        2301066,
+        2530104
       ],
-      "peak_rss_kb": 16744,
-      "speedup": 23.64969208372468,
-      "reward": 23.49871829194781,
+      "peak_rss_kb": 16764,
+      "speedup": 20.866024479626134,
+      "reward": 20.71465197782021,
       "decision": "keep",
       "detail": null,
       "change": "@@ -5,6 +5,7 @@\n     discontinued = [\"sku%d\" % i for i in range(0, 5000, 2)]\n     restock = 0\n+    discontinued_set = frozenset(discontinued)\n     for sku, qty in items:\n-        if sku in discontinued:\n+        if sku in discontinued_set:\n             continue\n         restock += clamp(30 - qty, 0, 30)"
@@ -117,10 +117,10 @@
       "evaluated": 2,
       "kept": 2,
       "new_elite": true,
-      "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 2354049,
-      "best_peak_rss_kb": 16744,
-      "best_reward": 23.49871829194781,
+      "best_origin": "rule:membership:set",
+      "best_median_ns": 2434496,
+      "best_peak_rss_kb": 16780,
+      "best_reward": 21.53396207213911,
       "tokens": 0
     },
     {
@@ -128,44 +128,44 @@
       "evaluated": 0,
       "kept": 0,
       "new_elite": false,
-      "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 2354049,
-      "best_peak_rss_kb": 16744,
-      "best_reward": 23.49871829194781,
+      "best_origin": "rule:membership:set",
+      "best_median_ns": 2434496,
+      "best_peak_rss_kb": 16780,
+      "best_reward": 21.53396207213911,
       "tokens": 0
     }
   ],
   "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
   "confirmation": {
-    "origin": "rule:membership:frozenset",
+    "origin": "rule:membership:set",
     "rounds": 10,
     "baseline_times_ns": [
-      53540374,
-      52818412,
-      56019491,
-      54622251,
-      54904790,
-      54108312,
-      55263195,
-      54407009,
-      53190917,
-      52994644
+      52664427,
+      55882534,
+      52988227,
+      54123146,
+      53022853,
+      53146999,
+      52774540,
+      52429206,
+      52644822,
+      53910101
     ],
     "candidate_times_ns": [
-      2464037,
-      2522031,
-      2510034,
-      2743267,
-      2635243,
-      2463052,
-      2662077,
-      2525474,
-      2625192,
-      2842148
+      2594828,
+      2319398,
+      2513471,
+      3961932,
+      2499227,
+      2417720,
+      2505617,
+      2454896,
+      2439994,
+      2553860
     ],
-    "baseline_median_ns": 54257660,
-    "candidate_median_ns": 2575333,
-    "speedup": 21.068211373053504,
+    "baseline_median_ns": 53005540,
+    "candidate_median_ns": 2502422,
+    "speedup": 21.181695173715703,
     "candidate_wins": 10,
     "seeds": [
       1,
@@ -184,22 +184,22 @@
     "detail": null
   },
   "best": {
-    "origin": "rule:membership:frozenset",
-    "median_ns": 2575333,
-    "peak_rss_kb": 16744,
-    "speedup": 21.068211373053504,
+    "origin": "rule:membership:set",
+    "median_ns": 2502422,
+    "peak_rss_kb": 16780,
+    "speedup": 21.181695173715703,
     "confirmed": true,
     "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
     "model_rewrite": false
   },
-  "best_source": "from .util import clamp\n\n\ndef restock_report(items):\n    discontinued = [\"sku%d\" % i for i in range(0, 5000, 2)]\n    restock = 0\n    discontinued_set = frozenset(discontinued)\n    for sku, qty in items:\n        if sku in discontinued_set:\n            continue\n        restock += clamp(30 - qty, 0, 30)\n    return restock\n",
+  "best_source": "from .util import clamp\n\n\ndef restock_report(items):\n    discontinued = [\"sku%d\" % i for i in range(0, 5000, 2)]\n    restock = 0\n    discontinued_set = set(discontinued)\n    for sku, qty in items:\n        if sku in discontinued_set:\n            continue\n        restock += clamp(30 - qty, 0, 30)\n    return restock\n",
   "notes": [],
   "timings": {
-    "project_ns": 279053,
-    "parse_ns": 21150,
-    "policy_ns": 116040,
+    "project_ns": 273848,
+    "parse_ns": 19375,
+    "policy_ns": 90168,
     "deps_ns": 0,
-    "propose_ns": 501156,
-    "search_ns": 2555917723
+    "propose_ns": 440472,
+    "search_ns": 2387552910
   }
 }

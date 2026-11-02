@@ -6,9 +6,9 @@ This is evolutionary search with a measured reward, not a trained policy.
 
 Repository: https://github.com/ayaan-cs/aco
 
-![aco's dashboard after optimising fixtures/bubble.py: 408.9x faster, confirmed](release-run/still-2-bubble-summary.png)
+![aco's dashboard after optimising fixtures/bubble.py: 406.8x faster, confirmed](release-run/still-2-bubble-summary.png)
 
-A 47-second real terminal recording (bubble.py and lookup.py in the dashboard, then slower.py rejected in `--plain`) is at [release-run/demo.mp4](release-run/demo.mp4); its script is [release-run/demo.tape](release-run/demo.tape).
+A 62-second real terminal recording (bubble.py in the dashboard, a multi-file project with `--mutate`, numpy with its requirements in `--plain`, then slower.py rejected) is at [release-run/demo.mp4](release-run/demo.mp4); its script is [release-run/demo.tape](release-run/demo.tape).
 
 ## How a run works
 
@@ -58,7 +58,7 @@ cargo build --release
 - `--check expected.txt` compares candidates against a fixed expected stdout instead of the baseline's output.
 - `--sandbox auto|docker|unshare` (default `auto`: Docker if the daemon answers, else unshare on Linux, else exit with a message naming both).
 
-A real run of the four fixtures is in [release-run/](release-run/): the plain transcript, one JSON report per fixture, and [the bench table](release-run/bench.md). [release-run/VERIFY.md](release-run/VERIFY.md) is the end-to-end verification matrix (every fixture in the dashboard, `--plain` and `--json`, output equivalence, rejection, policy, sandbox limits, bad inputs, the model proposer, cancellation, resize, colour, and three repeats of each speedup), produced by [scripts/verify.py](scripts/verify.py).
+A real run of the four fixtures and 15 stress cases is in [release-run/](release-run/): the plain transcript, the JSON reports, and [the bench table](release-run/bench.md) (`python3 scripts/bench.py` regenerates it). [release-run/VERIFY.md](release-run/VERIFY.md) is the end-to-end verification matrix (every fixture in the dashboard, `--plain` and `--json`, output equivalence, rejection, policy, sandbox limits, bad inputs, the model proposer, cancellation, resize, colour, and three repeats of each speedup), produced by [scripts/verify.py](scripts/verify.py).
 
 ## Projects, packages and inputs
 

@@ -32,15 +32,15 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 2741023,
+    "median_ns": 2414438,
     "times_ns": [
-      2622112,
-      2741023,
-      2511002,
-      3852180,
-      4765181
+      2414438,
+      2447796,
+      2327596,
+      2329926,
+      2532290
     ],
-    "peak_rss_kb": 15984,
+    "peak_rss_kb": 16012,
     "exit_code": 0,
     "stderr": null
   },
@@ -50,17 +50,17 @@
       "index": 0,
       "origin": "rule:concat:join",
       "tokens": 0,
-      "median_ns": 1690122,
+      "median_ns": 1585573,
       "times_ns": [
-        1625503,
-        1722425,
-        1583285,
-        1752174,
-        1690122
+        1559842,
+        1599996,
+        1585573,
+        1577928,
+        1627348
       ],
-      "peak_rss_kb": 16388,
-      "speedup": 1.6217900246254413,
-      "reward": 1.46799873333415,
+      "peak_rss_kb": 16496,
+      "speedup": 1.5227542345890097,
+      "reward": 1.3682201351635788,
       "decision": "keep",
       "detail": null,
       "change": "@@ -10,7 +10,8 @@\n \n \n-out = \"\"\n+out_parts = []\n for i in range(20000):\n     if (k := kind(i % 2)) == \"zero\":\n-        out += k[0]\n+        out_parts.append(k[0])\n+out = \"\".join(out_parts)\n print(len(out))"
@@ -73,9 +73,9 @@
       "kept": 1,
       "new_elite": true,
       "best_origin": "rule:concat:join",
-      "best_median_ns": 1690122,
-      "best_peak_rss_kb": 16388,
-      "best_reward": 1.46799873333415,
+      "best_median_ns": 1585573,
+      "best_peak_rss_kb": 16496,
+      "best_reward": 1.3682201351635788,
       "tokens": 0
     },
     {
@@ -84,9 +84,9 @@
       "kept": 0,
       "new_elite": false,
       "best_origin": "rule:concat:join",
-      "best_median_ns": 1690122,
-      "best_peak_rss_kb": 16388,
-      "best_reward": 1.46799873333415,
+      "best_median_ns": 1585573,
+      "best_peak_rss_kb": 16496,
+      "best_reward": 1.3682201351635788,
       "tokens": 0
     }
   ],
@@ -95,33 +95,33 @@
     "origin": "rule:concat:join",
     "rounds": 10,
     "baseline_times_ns": [
-      2622156,
-      2331124,
-      2325737,
-      2335305,
-      2539764,
-      4068463,
-      2693883,
-      2633775,
-      2507970,
-      2596667
+      2474490,
+      2308603,
+      2297481,
+      2333872,
+      2456613,
+      2461471,
+      2341406,
+      2352040,
+      2488171,
+      2365633
     ],
     "candidate_times_ns": [
-      1896876,
-      1661250,
-      1682675,
-      1810107,
-      2927209,
-      1703967,
-      1636699,
-      1797952,
-      2517474,
-      1603332
+      1756449,
+      1579915,
+      1578069,
+      1711212,
+      1820876,
+      1572364,
+      1734532,
+      1691374,
+      1678485,
+      2050373
     ],
-    "baseline_median_ns": 2568215,
-    "candidate_median_ns": 1750959,
-    "speedup": 1.466747650858758,
-    "candidate_wins": 8,
+    "baseline_median_ns": 2358836,
+    "candidate_median_ns": 1701293,
+    "speedup": 1.3864960356622875,
+    "candidate_wins": 10,
     "seeds": [
       1,
       2,
@@ -140,21 +140,21 @@
   },
   "best": {
     "origin": "rule:concat:join",
-    "median_ns": 1750959,
-    "peak_rss_kb": 16388,
-    "speedup": 1.466747650858758,
+    "median_ns": 1701293,
+    "peak_rss_kb": 16496,
+    "speedup": 1.3864960356622875,
     "confirmed": true,
-    "reason": "confirmed by an interleaved re-run (8/10 rounds won, 10 hash seeds)",
+    "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
     "model_rewrite": false
   },
   "best_source": "# 3.10 match statement and a walrus: parsed and left alone.\ndef kind(v):\n    match v:\n        case 0:\n            return \"zero\"\n        case [x, *_]:\n            return \"list\"\n        case _:\n            return \"other\"\n\n\nout_parts = []\nfor i in range(20000):\n    if (k := kind(i % 2)) == \"zero\":\n        out_parts.append(k[0])\nout = \"\".join(out_parts)\nprint(len(out))\n",
   "notes": [],
   "timings": {
-    "project_ns": 56295,
-    "parse_ns": 23745,
-    "policy_ns": 12182,
+    "project_ns": 59963,
+    "parse_ns": 26754,
+    "policy_ns": 12304,
     "deps_ns": 0,
-    "propose_ns": 432729,
-    "search_ns": 1063614415
+    "propose_ns": 296573,
+    "search_ns": 934164951
   }
 }

@@ -1,11 +1,12 @@
 ┌ aco 0.1.0 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ file fixtures/lookup.py   sandbox unshare   proposer rules                                                                               │
+│ code 1 file · 9 lines   packages none (standard library only)                                                                            │
 │ search 3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs                                                                         │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ progress ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │███████████████████████████████████████████████████████████████████done ██████████████████████████████████████████████████████████████████│
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ best median per gen · 1.301 ms ─────────────┐┌ peak RSS · 15.4 MB ────────────────────────┐┌ tokens per gen · 0 ─────────────────────────┐
+┌ best median per gen · 1.435 ms ─────────────┐┌ peak RSS · 15.8 MB ────────────────────────┐┌ tokens per gen · 0 ─────────────────────────┐
 │█                                            ││▇██                                         ││                                             │
 │█                                            ││███                                         ││                                             │
 │█                                            ││███                                         ││                                             │
@@ -13,11 +14,10 @@
 └─────────────────────────────────────────────┘└────────────────────────────────────────────┘└─────────────────────────────────────────────┘
 ┌ candidates · 4 rows ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ gen  candidate                                          median       RSS  tokens   speedup  decision                                     │
-│ 0    baseline                                         243.8 ms   15.3 MB       0     1.00x  reference                                    │
-│ 1    rule:membership:set                              1.357 ms   15.4 MB       0    179.6x  kept                                         │
-│ 1    rule:membership:frozenset                        1.302 ms   15.4 MB       0    187.3x  kept                                         │
-│ ✓    confirm rule:membership:frozenset                1.373 ms                      177.3x  confirmed vs 243.5 ms                        │
-│                                                                                                                                          │
+│ 0    baseline                                         252.1 ms   15.6 MB       0     1.00x  reference                                    │
+│ 1    rule:membership:set                              1.472 ms   15.7 MB       0    171.2x  kept                                         │
+│ 1    rule:membership:frozenset                        1.435 ms   15.8 MB       0    175.7x  kept                                         │
+│ ✓    confirm rule:membership:frozenset                1.434 ms                      174.4x  confirmed vs 250.1 ms                        │
 │                                                                                                                                          │
 │                                                                                                                                          │
 │                                                                                                                                          │
@@ -26,9 +26,9 @@
 │                                                                                                                                          │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ summary ─────────────────────────────────────────────┐┌ diff · original → best ──────────────────────────────────────────────────────────┐
-│ ✓ 177.3x faster, confirmed                           ││ @@ -3,6 +3,7 @@                                                                  │
-│ baseline   243.5 ms  10 runs                         ││  allowed = [i * 7 for i in range(2000)]                                          │
-│ optimized  1.373 ms                                  ││  hits = 0                                                                        │
+│ ✓ 174.4x faster, confirmed                           ││ @@ -3,6 +3,7 @@                                                                  │
+│ baseline   250.1 ms  10 runs                         ││  allowed = [i * 7 for i in range(2000)]                                          │
+│ optimized  1.434 ms                                  ││  hits = 0                                                                        │
 │ winner     rule:membership:frozenset                 ││ +allowed_set = frozenset(allowed)                                                │
 │ searched   2 candidates, 2 kept                      ││  for k in range(35000):                                                          │
 │ best.py    …release-run/verify/resize/lookup.best.py ││ -    if k in allowed:                                                            │
@@ -39,4 +39,4 @@
 │                                                      ││                                                                                  │
 │                                                      ││                                                                                  │
 └──────────────────────────────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────┘
- best: rule:membership:frozenset at 177.3x                                                                                q quit · ↑↓ scroll
+ best: rule:membership:frozenset at 174.4x                                                                                q quit · ↑↓ scroll

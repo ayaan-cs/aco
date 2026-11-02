@@ -1,36 +1,36 @@
 ┌ aco 0.1.0 ───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ file fixtures/bubble.py   sandbox unshare   proposer rules                                                           │
+│ code 1 file · 20 lines   packages none (standard library only)                                                       │
 │ search 3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs                                                     │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ progress ────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │█████████████████████████████████████████████████████████done ████████████████████████████████████████████████████████│
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ best median per gen · 902.0 µs ──────┐┌ peak RSS · 16.0 MB ──────────────────┐┌ tokens per gen · 0 ──────────────────┐
-│█                                     ││▇██                                   ││                                      │
+┌ best median per gen · 937.0 µs ──────┐┌ peak RSS · 16.4 MB ──────────────────┐┌ tokens per gen · 0 ──────────────────┐
+│█                                     ││█▇▇                                   ││                                      │
 │█                                     ││███                                   ││                                      │
 │█                                     ││███                                   ││                                      │
 │█                                     ││███                                   ││                                      │
 └──────────────────────────────────────┘└──────────────────────────────────────┘└──────────────────────────────────────┘
 ┌ candidates · 4 rows ─────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ gen  candidate                                median       RSS  tokens   speedup  decision                           │
-│ 0    baseline                               350.4 ms   16.0 MB       0     1.00x  reference                          │
-│ 1    rule:bubble-sort:sorted                922.0 µs   16.0 MB       0    380.0x  kept                               │
-│ 1    rule:bubble-sort:list.sort             902.4 µs   16.0 MB       0    388.3x  kept                               │
-│ ✓    confirm rule:bubble-sort:list.sort     815.6 µs                      390.3x  confirmed vs 318.4 ms              │
-│                                                                                                                      │
+│ 0    baseline                               318.2 ms   16.4 MB       0     1.00x  reference                          │
+│ 1    rule:bubble-sort:sorted                937.1 µs   16.4 MB       0    339.6x  kept                               │
+│ 1    rule:bubble-sort:list.sort             998.4 µs   16.2 MB       0    318.7x  kept                               │
+│ ✓    confirm rule:bubble-sort:sorted        790.4 µs                      406.1x  confirmed vs 321.0 ms              │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ summary ─────────────────────────────────────┐┌ diff · original → best ──────────────────────────────────────────────┐
-│ ✓ 390.3x faster, confirmed                   ││ @@ -4,8 +4,5 @@                                                      │
-│ baseline   318.4 ms  10 runs                 ││  def bubble(xs):                                                     │
-│ optimized  815.6 µs                          ││      n = len(xs)                                                     │
-│ winner     rule:bubble-sort:list.sort        ││ -    for i in range(n):                                              │
+│ ✓ 406.1x faster, confirmed                   ││ @@ -4,8 +4,5 @@                                                      │
+│ baseline   321.0 ms  10 runs                 ││  def bubble(xs):                                                     │
+│ optimized  790.4 µs                          ││      n = len(xs)                                                     │
+│ winner     rule:bubble-sort:sorted           ││ -    for i in range(n):                                              │
 │ searched   2 candidates, 2 kept              ││ -        for j in range(n - 1 - i):                                  │
 │ best.py    …se-run/verify/tui/bubble.best.py ││ -            if xs[j] > xs[j + 1]:                                   │
 │ report     …un/verify/tui/bubble.report.json ││ -                xs[j], xs[j + 1] = xs[j + 1], xs[j]                 │
-│ search exhausted: the proposer has no new    ││ +    xs.sort()                                                       │
+│ search exhausted: the proposer has no new    ││ +    xs[:] = sorted(xs)                                              │
 │ candidates for the elite                     ││      return xs                                                       │
 │                                              ││                                                                      │
 │                                              ││                                                                      │
 │                                              ││                                                                      │
 └──────────────────────────────────────────────┘└──────────────────────────────────────────────────────────────────────┘
- best: rule:bubble-sort:list.sort at 390.3x                                                           q quit · ↑↓ scroll
+ best: rule:bubble-sort:sorted at 406.1x                                                              q quit · ↑↓ scroll

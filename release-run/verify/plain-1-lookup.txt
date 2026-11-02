@@ -1,22 +1,24 @@
 aco 0.1.0 · fixtures/lookup.py
+  code      1 file · 9 lines
+  packages  none (standard library only)
   sandbox   unshare
   proposer  rules
   search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
 
-  gen candidate                          median      RSS tokens  speedup  decision
-    0 baseline                         243.0 ms  15.3 MB      0    1.00x  reference
-    1 rule:membership:set              1.321 ms  15.5 MB      0   183.9x  kept
-    1 rule:membership:frozenset        1.333 ms  15.4 MB      0   182.4x  kept
-  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:set at 1.321 ms
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           243.7 ms  15.6 MB      0    1.00x  reference
+    1 rule:membership:set                1.350 ms  15.7 MB      0   180.5x  kept
+    1 rule:membership:frozenset          1.376 ms  15.7 MB      0   177.1x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:set at 1.350 ms
   ─── gen 2: no new candidates · elite unchanged (rule:membership:set)
   ─── stop: search exhausted: the proposer has no new candidates for the elite
 
-  confirm rule:membership:set against the baseline, 10 interleaved runs in fresh sandboxes
-          baseline 243.5 ms · candidate 1.480 ms · 164.5x  ✓ confirmed
+  confirm rule:membership:set against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 244.5 ms · candidate 1.367 ms · 178.9x · won 10/10  ✓ confirmed
 
-  ✓ fixtures/lookup.py  164.5x faster, confirmed
-    baseline   243.5 ms   median of 10 interleaved runs (search phase: 243.0 ms)
-    optimized  1.480 ms   rule:membership:set
+  ✓ fixtures/lookup.py  178.9x faster, confirmed
+    baseline   244.5 ms   median of 10 interleaved runs (search phase: 243.7 ms)
+    optimized  1.367 ms   rule:membership:set
     searched   2 candidates, 2 kept
     stopped    search exhausted: the proposer has no new candidates for the elite
     wrote      /workspace/aco/release-run/verify/plain-1/lookup.best.py

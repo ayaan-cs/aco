@@ -32,26 +32,26 @@
     "notes": []
   },
   "baseline": {
-    "median_ns": 2009,
+    "median_ns": 1900,
     "times_ns": [
-      3803,
-      2458,
-      1976,
-      2009,
-      1849
+      3682,
+      2322,
+      1900,
+      1880,
+      1638
     ],
-    "peak_rss_kb": 15832,
+    "peak_rss_kb": 15856,
     "exit_code": 0,
     "stderr": null
   },
   "candidates": [],
   "generations": [],
-  "stop_reason": "too fast to measure: baseline median 2.0 µs is under 1.000 ms",
+  "stop_reason": "too fast to measure: baseline median 1.9 µs is under 1.000 ms",
   "confirmation": null,
   "best": {
     "origin": "baseline",
-    "median_ns": 2009,
-    "peak_rss_kb": 15832,
+    "median_ns": 1900,
+    "peak_rss_kb": 15856,
     "speedup": 1.0,
     "confirmed": false,
     "reason": "too fast to measure reliably; the original is kept",
@@ -59,14 +59,14 @@
   },
   "best_source": "# Runs in microseconds: any speedup is inside the noise.\nallowed = [2, 3, 5]\nhits = 0\nfor v in range(8):\n    if v in allowed:\n        hits += 1\nprint(hits)\n",
   "notes": [
-    "too fast to measure reliably: the original runs in 2.0 µs per rep, under the 1.000 ms floor where run-to-run noise rivals the 5% margin; keeping the original"
+    "too fast to measure reliably: the original runs in 1.9 µs per rep, under the 1.000 ms floor where run-to-run noise rivals the 5% margin; keeping the original"
   ],
   "timings": {
-    "project_ns": 43180,
-    "parse_ns": 13915,
-    "policy_ns": 7350,
+    "project_ns": 40829,
+    "parse_ns": 12793,
+    "policy_ns": 6344,
     "deps_ns": 0,
     "propose_ns": 0,
-    "search_ns": 46254977
+    "search_ns": 36211842
   }
 }
