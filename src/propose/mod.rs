@@ -23,3 +23,41 @@ pub trait Proposer: Send + Sync {
         Vec::new()
     }
 }
+
+/// The default proposer: deterministic AST rules with zero token cost.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct RuleProposer;
+
+impl Proposer for RuleProposer {
+    fn name(&self) -> String {
+        "rules".into()
+    }
+
+    fn propose(&self, source: &str) -> Vec<Candidate> {
+        crate::mutate::rewrites(source)
+            .into_iter()
+            .map(|r| Candidate {
+                source: r.source,
+                origin: format!("rule:{}", r.rule),
+                tokens: 0,
+            })
+            .collect()
+    }
+}
+
+/// Several proposers, queried in order.
+pub struct Combined(pub Vec<Box<dyn Proposer>>);
+
+impl Proposer for Combined {
+    fn name(&self) -> String {
+        self.0.iter().map(|p| p.name()).collect::<Vec<_>>().join("+")
+    }
+
+    fn propose(&self, source: &str) -> Vec<Candidate> {
+        self.0.iter().flat_map(|p| p.propose(source)).collect()
+    }
+
+    fn take_notes(&self) -> Vec<String> {
+        self.0.iter().flat_map(|p| p.take_notes()).collect()
+    }
+}

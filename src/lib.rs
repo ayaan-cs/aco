@@ -9,3 +9,5 @@ pub mod mutate;
 pub mod policy;
 pub mod propose;
 pub mod runner;
+pub mod score;
+pub mod search;
