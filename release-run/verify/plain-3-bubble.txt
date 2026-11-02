@@ -1,0 +1,32 @@
+aco 0.1.0 · fixtures/bubble.py
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                          median      RSS tokens  speedup  decision
+    0 baseline                         341.6 ms  16.1 MB      0    1.00x  reference
+    1 rule:bubble-sort:sorted          864.2 µs  16.1 MB      0   395.2x  kept
+    1 rule:bubble-sort:list.sort       769.6 µs  16.1 MB      0   443.8x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:bubble-sort:list.sort at 769.6 µs
+  ─── gen 2: no new candidates · elite unchanged (rule:bubble-sort:list.sort)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:bubble-sort:list.sort against the baseline, 10 interleaved runs in fresh sandboxes
+          baseline 318.3 ms · candidate 791.4 µs · 402.2x  ✓ confirmed
+
+  ✓ fixtures/bubble.py  402.2x faster, confirmed
+    baseline   318.3 ms   median of 10 interleaved runs (search phase: 341.6 ms)
+    optimized  791.4 µs   rule:bubble-sort:list.sort
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/verify/plain-3/bubble.best.py
+               /workspace/aco/release-run/verify/plain-3/bubble.report.json
+    change    
+      @@ -5,6 +5,3 @@
+           n = len(xs)
+      -    for i in range(n):
+      -        for j in range(n - 1 - i):
+      -            if xs[j] > xs[j + 1]:
+      -                xs[j], xs[j + 1] = xs[j + 1], xs[j]
+      +    xs.sort()
+           return xs

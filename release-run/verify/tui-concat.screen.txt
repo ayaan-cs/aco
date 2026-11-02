@@ -1,0 +1,36 @@
+┌ aco 0.1.0 ───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ file fixtures/concat.py   sandbox unshare   proposer rules                                                           │
+│ search 3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs                                                     │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ progress ────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│█████████████████████████████████████████████████████████done ████████████████████████████████████████████████████████│
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ best median per gen · 4.566 ms ──────┐┌ peak RSS · 17.4 MB ──────────────────┐┌ tokens per gen · 0 ──────────────────┐
+│█                                     ││▄██                                   ││                                      │
+│█                                     ││███                                   ││                                      │
+│█                                     ││███                                   ││                                      │
+│█                                     ││███                                   ││                                      │
+└──────────────────────────────────────┘└──────────────────────────────────────┘└──────────────────────────────────────┘
+┌ candidates · 3 rows ─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ gen  candidate                                median       RSS  tokens   speedup  decision                           │
+│ 0    baseline                               261.6 ms   15.8 MB       0     1.00x  reference                          │
+│ 1    rule:concat:join                       4.566 ms   17.4 MB       0     57.3x  kept                               │
+│ ✓    confirm rule:concat:join               4.562 ms                       57.2x  confirmed vs 260.9 ms              │
+│                                                                                                                      │
+│                                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ summary ─────────────────────────────────────┐┌ diff · original → best ──────────────────────────────────────────────┐
+│ ✓ 57.2x faster, confirmed                    ││ @@ -1,7 +1,8 @@                                                      │
+│ baseline   260.9 ms  10 runs                 ││  # Building a large string with += in a loop (quadratic at module sc │
+│ optimized  4.562 ms                          ││                                                                      │
+│ winner     rule:concat:join                  ││ -report = ""                                                         │
+│ searched   1 candidates, 1 kept              ││ +report_parts = []                                                   │
+│ best.py    …se-run/verify/tui/concat.best.py ││  for i in range(40000):                                              │
+│ report     …un/verify/tui/concat.report.json ││ -    report += str(i * 31 % 9973) + ","                              │
+│ search exhausted: the proposer has no new    ││ +    report_parts.append(str(i * 31 % 9973) + ",")                   │
+│ candidates for the elite                     ││ +report = "".join(report_parts)                                      │
+│                                              ││                                                                      │
+│                                              ││  print(len(report), report[:24], report[-24:])                       │
+│                                              ││                                                                      │
+└──────────────────────────────────────────────┘└──────────────────────────────────────────────────────────────────────┘
+ best: rule:concat:join at 57.2x                                                                      q quit · ↑↓ scroll

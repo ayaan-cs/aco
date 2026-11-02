@@ -1,0 +1,378 @@
+{
+  "version": "aco 0.1.0",
+  "python": "Python 3.13.5",
+  "results": [
+    {
+      "row": "TUI",
+      "name": "fixtures/bubble.py",
+      "pass": true,
+      "detail": "exit 0; summary panel: 390.3x faster, confirmed; terminal restored: True"
+    },
+    {
+      "row": "TUI",
+      "name": "fixtures/concat.py",
+      "pass": true,
+      "detail": "exit 0; summary panel: 57.2x faster, confirmed; terminal restored: True"
+    },
+    {
+      "row": "TUI",
+      "name": "fixtures/lookup.py",
+      "pass": true,
+      "detail": "exit 0; summary panel: 175.2x faster, confirmed; terminal restored: True"
+    },
+    {
+      "row": "TUI",
+      "name": "fixtures/slower.py",
+      "pass": true,
+      "detail": "exit 0; summary panel: original kept; terminal restored: True"
+    },
+    {
+      "row": "--plain",
+      "name": "fixtures/bubble.py",
+      "pass": true,
+      "detail": "exit 0, 9s; confirmed 393.3x (rule:bubble-sort:sorted); no ANSI codes in piped output"
+    },
+    {
+      "row": "--json",
+      "name": "bubble.report.json",
+      "pass": true,
+      "detail": "schema_version 1, keys/types, medians recomputed, speedup = baseline/candidate"
+    },
+    {
+      "row": "best.py == original stdout",
+      "name": "bubble",
+      "pass": true,
+      "detail": "stdout identical: '16 49681 99992 132208'"
+    },
+    {
+      "row": "--plain",
+      "name": "fixtures/concat.py",
+      "pass": true,
+      "detail": "exit 0, 9s; confirmed 57.7x (rule:concat:join); no ANSI codes in piped output"
+    },
+    {
+      "row": "--json",
+      "name": "concat.report.json",
+      "pass": true,
+      "detail": "schema_version 1, keys/types, medians recomputed, speedup = baseline/candidate"
+    },
+    {
+      "row": "best.py == original stdout",
+      "name": "concat",
+      "pass": true,
+      "detail": "stdout identical: '195522 0,31,62,93,124,155,186,2 193,3224,3255,3286,3317,'"
+    },
+    {
+      "row": "--plain",
+      "name": "fixtures/lookup.py",
+      "pass": true,
+      "detail": "exit 0, 7s; confirmed 164.5x (rule:membership:set); no ANSI codes in piped output"
+    },
+    {
+      "row": "--json",
+      "name": "lookup.report.json",
+      "pass": true,
+      "detail": "schema_version 1, keys/types, medians recomputed, speedup = baseline/candidate"
+    },
+    {
+      "row": "best.py == original stdout",
+      "name": "lookup",
+      "pass": true,
+      "detail": "stdout identical: '2000'"
+    },
+    {
+      "row": "--plain",
+      "name": "fixtures/slower.py",
+      "pass": true,
+      "detail": "exit 0, 3s; original kept; no ANSI codes in piped output"
+    },
+    {
+      "row": "--json",
+      "name": "slower.report.json",
+      "pass": true,
+      "detail": "schema_version 1, keys/types, medians recomputed, speedup = baseline/candidate"
+    },
+    {
+      "row": "best.py == original stdout",
+      "name": "slower",
+      "pass": true,
+      "detail": "stdout identical: '800000'"
+    },
+    {
+      "row": "slower.py rejected",
+      "name": "slower.py",
+      "pass": true,
+      "detail": "rule:membership:set 328.6 ms (0.67x) reject_margin; rule:membership:frozenset 295.4 ms (0.75x) reject_margin vs baseline 221.1 ms; best.py is the original"
+    },
+    {
+      "row": "repeatability",
+      "name": "bubble",
+      "pass": true,
+      "detail": "confirmed 3/3: 393.3x, 389.8x, 402.2x (spread 3% of mean)"
+    },
+    {
+      "row": "repeatability",
+      "name": "concat",
+      "pass": true,
+      "detail": "confirmed 3/3: 57.7x, 57.9x, 55.5x (spread 4% of mean)"
+    },
+    {
+      "row": "repeatability",
+      "name": "lookup",
+      "pass": true,
+      "detail": "confirmed 3/3: 164.5x, 179.7x, 179.8x (spread 9% of mean)"
+    },
+    {
+      "row": "repeatability",
+      "name": "slower",
+      "pass": true,
+      "detail": "rejected 3/3"
+    },
+    {
+      "row": "search controls",
+      "name": "--gens 1 stops after one generation",
+      "pass": true,
+      "detail": "generations 1, evaluated per gen [2], stop: reached --gens 1"
+    },
+    {
+      "row": "search controls",
+      "name": "--pop 2 measures 1 candidate per generation",
+      "pass": true,
+      "detail": "generations 2, evaluated per gen [1, 0], stop: search exhausted: the proposer has no new candidates for the elite"
+    },
+    {
+      "row": "search controls",
+      "name": "--pop 4 measures both rule rewrites (rules offer 2)",
+      "pass": true,
+      "detail": "generations 2, evaluated per gen [2, 0], stop: search exhausted: the proposer has no new candidates for the elite"
+    },
+    {
+      "row": "search controls",
+      "name": "--patience 3 on slower.py (rules exhaust first)",
+      "pass": true,
+      "detail": "generations 2, stop: search exhausted: the proposer has no new candidates for the elite; patience itself is covered by tests/search_fake.rs (no_improvement_stops_after_patience)"
+    },
+    {
+      "row": "bad input",
+      "name": "missing file",
+      "pass": true,
+      "detail": "exit 2: error: `nope.py` does not exist"
+    },
+    {
+      "row": "bad input",
+      "name": "syntax error",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/syntax.py` is not valid Python: invalid syntax. Got unexpected token ':'"
+    },
+    {
+      "row": "bad input",
+      "name": "empty file",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/empty.py` has no code to optimise (it is empty or only comments)"
+    },
+    {
+      "row": "bad input",
+      "name": "comments only",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/comments.py` has no code to optimise (it is empty or only comments)"
+    },
+    {
+      "row": "bad input",
+      "name": "non-Python text",
+      "pass": true,
+      "detail": "exit 2: error: `README.md` is not valid Python: Got unexpected token `"
+    },
+    {
+      "row": "bad input",
+      "name": "binary file",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/blob.py` is not UTF-8 text"
+    },
+    {
+      "row": "bad input",
+      "name": "directory",
+      "pass": true,
+      "detail": "exit 2: error: `fixtures` is a directory"
+    },
+    {
+      "row": "policy",
+      "name": "policy: import os",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/p_os.py` was rejected before running: it imports banned module `os`"
+    },
+    {
+      "row": "policy",
+      "name": "policy: subprocess",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/p_sub.py` was rejected before running: it imports banned module `subprocess`"
+    },
+    {
+      "row": "policy",
+      "name": "policy: open()",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/p_open.py` was rejected before running: it uses banned builtin `open`"
+    },
+    {
+      "row": "policy",
+      "name": "policy: eval()",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/p_eval.py` was rejected before running: it uses banned builtin `eval`"
+    },
+    {
+      "row": "policy",
+      "name": "policy: socket",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/p_sock.py` was rejected before running: it imports banned module `socket`"
+    },
+    {
+      "row": "policy",
+      "name": "policy: __import__",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/p_imp.py` was rejected before running: it uses banned builtin `__import__`"
+    },
+    {
+      "row": "policy",
+      "name": "policy: dunder escape",
+      "pass": true,
+      "detail": "exit 2: error: `/workspace/aco/release-run/verify/inputs/p_dunder.py` was rejected before running: it accesses dunder attribute `.__subclasses__`"
+    },
+    {
+      "row": "sandbox",
+      "name": "sandbox timeout",
+      "pass": true,
+      "detail": "exit 1: error: /workspace/aco/release-run/verify/inputs/spin.py: baseline failed in the sandbox: timed out"
+    },
+    {
+      "row": "sandbox",
+      "name": "sandbox memory limit",
+      "pass": true,
+      "detail": "exit 1: error: /workspace/aco/release-run/verify/inputs/hog.py: baseline failed in the sandbox: MemoryError: "
+    },
+    {
+      "row": "bad input",
+      "name": "crashing script",
+      "pass": true,
+      "detail": "exit 1: error: /workspace/aco/release-run/verify/inputs/crash.py: baseline failed in the sandbox: ZeroDivisionError: division by zero"
+    },
+    {
+      "row": "bad input",
+      "name": "no sandbox (docker absent)",
+      "pass": true,
+      "detail": "exit 3: error: no sandbox is available, so aco will not run any code"
+    },
+    {
+      "row": "bad input",
+      "name": "usage: --reps 4",
+      "pass": true,
+      "detail": "exit 2: error: invalid value '4' for '--reps <REPS>': must be odd so the median is a real measurement"
+    },
+    {
+      "row": "bad input",
+      "name": "usage: --pop 1",
+      "pass": true,
+      "detail": "exit 2: error: invalid value '1' for '--pop <POP>': must be at least 2 (the current best plus one candidate)"
+    },
+    {
+      "row": "model proposer",
+      "name": "mock server: good",
+      "pass": true,
+      "detail": "mock reply kept and confirmed at 178.3x, tokens counted 42"
+    },
+    {
+      "row": "model proposer",
+      "name": "mock server: policy",
+      "pass": true,
+      "detail": "exit 0, original kept; note: model reply 0 dropped by policy: imports banned module `os`"
+    },
+    {
+      "row": "model proposer",
+      "name": "mock server: wrong",
+      "pass": true,
+      "detail": "a reply that prints something else is measured and rejected: output differs"
+    },
+    {
+      "row": "model proposer",
+      "name": "mock server: garbage",
+      "pass": true,
+      "detail": "exit 0, original kept; note: model request to http://127.0.0.1:45587 failed: json: expected ident at line 1 column 2"
+    },
+    {
+      "row": "model proposer",
+      "name": "mock server: 500",
+      "pass": true,
+      "detail": "exit 0, original kept; note: model request to http://127.0.0.1:45587 failed: http status: 500"
+    },
+    {
+      "row": "model proposer",
+      "name": "refused (nothing listening)",
+      "pass": true,
+      "detail": "exit 0 in 1.0s; note: model request to http://127.0.0.1:9 failed: io: Connection refused (os error 111) (is Ollama or llama-server running at http://127.0.0.1:9?)"
+    },
+    {
+      "row": "model proposer",
+      "name": "unroutable address",
+      "pass": true,
+      "detail": "exit 0 in 11.1s; note: model request to http://10.255.255.1:11434 failed: timeout: connect (is Ollama or llama-server running at http://10.255.255.1:11434?)"
+    },
+    {
+      "row": "cancel",
+      "name": "Ctrl-C in the dashboard mid-search",
+      "pass": true,
+      "detail": "exit 130 0.3s after the action; termios restored: True; alt-screen left + cursor shown: True; leftover sandbox processes: 0"
+    },
+    {
+      "row": "cancel",
+      "name": "q in the dashboard mid-search",
+      "pass": true,
+      "detail": "exit 130 0.3s after the action; termios restored: True; alt-screen left + cursor shown: True; leftover sandbox processes: 0"
+    },
+    {
+      "row": "cancel",
+      "name": "Ctrl-C during confirmation",
+      "pass": true,
+      "detail": "exit 130 0.3s after the action; termios restored: True; alt-screen left + cursor shown: True; leftover sandbox processes: 0"
+    },
+    {
+      "row": "cancel",
+      "name": "SIGTERM to the dashboard",
+      "pass": true,
+      "detail": "exit 130 0.3s after the action; termios restored: True; alt-screen left + cursor shown: True; leftover sandbox processes: 0"
+    },
+    {
+      "row": "cancel",
+      "name": "Ctrl-C in --plain (SIGINT from the tty)",
+      "pass": true,
+      "detail": "exit 130 0.2s after the action; termios restored: True; alt-screen left + cursor shown: True; leftover sandbox processes: 0"
+    },
+    {
+      "row": "cancel",
+      "name": "panic in the search thread (ACO_TEST_PANIC=1)",
+      "pass": true,
+      "detail": "exit 101 0.3s after the action; termios restored: True; alt-screen left + cursor shown: True; leftover sandbox processes: 0"
+    },
+    {
+      "row": "resize",
+      "name": "120x36 \u2192 100x30 \u2192 60x18 \u2192 140x42 mid-run",
+      "pass": true,
+      "detail": "'terminal too small' shown at 60x18: True; final 140x42 frame has summary and diff: True; exit 0"
+    },
+    {
+      "row": "colour",
+      "name": "--plain on a TTY is coloured",
+      "pass": true,
+      "detail": "SGR codes present"
+    },
+    {
+      "row": "colour",
+      "name": "NO_COLOR=1 on a TTY",
+      "pass": true,
+      "detail": "no escape codes at all"
+    },
+    {
+      "row": "colour",
+      "name": "stdout piped (no --plain)",
+      "pass": true,
+      "detail": "falls back to line output, no escape codes"
+    }
+  ]
+}

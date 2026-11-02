@@ -1,0 +1,36 @@
+┌ aco 0.1.0 ───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ file fixtures/slower.py   sandbox unshare   proposer rules                                                           │
+│ search 3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs                                                     │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ progress ────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│█████████████████████████████████████████████████████████done ████████████████████████████████████████████████████████│
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ best median per gen · 229.9 ms ──────┐┌ peak RSS · 15.1 MB ──────────────────┐┌ tokens per gen · 0 ──────────────────┐
+│██                                    ││██                                    ││                                      │
+│██                                    ││██                                    ││                                      │
+│██                                    ││██                                    ││                                      │
+│██                                    ││██                                    ││                                      │
+└──────────────────────────────────────┘└──────────────────────────────────────┘└──────────────────────────────────────┘
+┌ candidates · 3 rows ─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ gen  candidate                                median       RSS  tokens   speedup  decision                           │
+│ 0    baseline                               229.9 ms   15.1 MB       0     1.00x  reference                          │
+│ 1    rule:membership:set                    304.5 ms   15.4 MB       0     0.76x  rejected: not 5% faster            │
+│ 1    rule:membership:frozenset              298.7 ms   15.2 MB       0     0.77x  rejected: not 5% faster            │
+│                                                                                                                      │
+│                                                                                                                      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ summary ─────────────────────────────────────┐┌ diff · original → best ──────────────────────────────────────────────┐
+│ – no faster version, original kept           ││ no change: the output file is the original                           │
+│ baseline   229.9 ms                          ││                                                                      │
+│ reason     no candidate matched the oracle   ││                                                                      │
+│ and cleared the time margin                  ││                                                                      │
+│ searched   2 candidates, 0 kept              ││                                                                      │
+│ best.py    …se-run/verify/tui/slower.best.py ││                                                                      │
+│ report     …un/verify/tui/slower.report.json ││                                                                      │
+│ early stop: 1 generation(s) without a new    ││                                                                      │
+│ elite (--patience 1)                         ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+│                                              ││                                                                      │
+└──────────────────────────────────────────────┘└──────────────────────────────────────────────────────────────────────┘
+ original kept: no candidate matched the oracle and cleared the time margin                           q quit · ↑↓ scroll

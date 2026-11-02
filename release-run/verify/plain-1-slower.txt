@@ -1,0 +1,19 @@
+aco 0.1.0 · fixtures/slower.py
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                          median      RSS tokens  speedup  decision
+    0 baseline                         221.1 ms  15.2 MB      0    1.00x  reference
+    1 rule:membership:set              328.6 ms  15.4 MB      0    0.67x  rejected: not 5% faster
+    1 rule:membership:frozenset        295.4 ms  15.3 MB      0    0.75x  rejected: not 5% faster
+  ─── gen 1: 2 evaluated, 0 kept · elite unchanged (baseline)
+  ─── stop: early stop: 1 generation(s) without a new elite (--patience 1)
+
+  – fixtures/slower.py  no faster version found, original kept
+    baseline   221.1 ms   median, search phase
+    reason     no candidate matched the oracle and cleared the time margin
+    searched   2 candidates, 0 kept
+    stopped    early stop: 1 generation(s) without a new elite (--patience 1)
+    wrote      /workspace/aco/release-run/verify/plain-1/slower.best.py  (unchanged copy of the original)
+               /workspace/aco/release-run/verify/plain-1/slower.report.json

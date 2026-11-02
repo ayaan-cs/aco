@@ -1,0 +1,31 @@
+aco 0.1.0 · fixtures/lookup.py
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                          median      RSS tokens  speedup  decision
+    0 baseline                         248.5 ms  15.3 MB      0    1.00x  reference
+    1 rule:membership:set              1.351 ms  15.4 MB      0   183.9x  kept
+    1 rule:membership:frozenset        1.341 ms  15.4 MB      0   185.3x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:frozenset at 1.341 ms
+  ─── gen 2: no new candidates · elite unchanged (rule:membership:frozenset)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:membership:frozenset against the baseline, 10 interleaved runs in fresh sandboxes
+          baseline 244.7 ms · candidate 1.361 ms · 179.8x  ✓ confirmed
+
+  ✓ fixtures/lookup.py  179.8x faster, confirmed
+    baseline   244.7 ms   median of 10 interleaved runs (search phase: 248.5 ms)
+    optimized  1.361 ms   rule:membership:frozenset
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/verify/plain-3/lookup.best.py
+               /workspace/aco/release-run/verify/plain-3/lookup.report.json
+    change    
+      @@ -4,4 +4,5 @@
+       hits = 0
+      +allowed_set = frozenset(allowed)
+       for k in range(35000):
+      -    if k in allowed:
+      +    if k in allowed_set:
+               hits += 1

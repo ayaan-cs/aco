@@ -1,3 +1,5 @@
 target/
 aco-out/
 ci-out/
+demo-out/
+release-run/verify/*/

@@ -1,0 +1,32 @@
+aco 0.1.0 · fixtures/concat.py
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                          median      RSS tokens  speedup  decision
+    0 baseline                         263.2 ms  15.7 MB      0    1.00x  reference
+    1 rule:concat:join                 4.330 ms  17.5 MB      0    60.8x  kept
+  ─── gen 1: 1 evaluated, 1 kept · new elite rule:concat:join at 4.330 ms
+  ─── gen 2: no new candidates · elite unchanged (rule:concat:join)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:concat:join against the baseline, 10 interleaved runs in fresh sandboxes
+          baseline 263.4 ms · candidate 4.567 ms · 57.7x  ✓ confirmed
+
+  ✓ fixtures/concat.py  57.7x faster, confirmed
+    baseline   263.4 ms   median of 10 interleaved runs (search phase: 263.2 ms)
+    optimized  4.567 ms   rule:concat:join
+    searched   1 candidates, 1 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/verify/plain-1/concat.best.py
+               /workspace/aco/release-run/verify/plain-1/concat.report.json
+    change    
+      @@ -2,5 +2,6 @@
+       
+      -report = ""
+      +report_parts = []
+       for i in range(40000):
+      -    report += str(i * 31 % 9973) + ","
+      +    report_parts.append(str(i * 31 % 9973) + ",")
+      +report = "".join(report_parts)
+       
