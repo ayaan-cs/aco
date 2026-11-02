@@ -631,7 +631,7 @@ impl Project {
     /// Copy the closure into a fresh directory for the sandbox.
     pub fn snapshot(&self) -> Result<Snapshot, String> {
         use std::os::unix::fs::PermissionsExt;
-        let dir = std::env::temp_dir().join(format!(
+        let dir = crate::runner::scratch_root().join(format!(
             "aco-proj-{}-{}",
             std::process::id(),
             crate::runner::nonce_public()

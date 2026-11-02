@@ -251,6 +251,24 @@ pub fn aborted() -> bool {
 // ------------------------------------------------------------ internals
 
 /// A random hex string for unique scratch names.
+/// Where per-run scratch directories go. They are bind-mounted into Docker
+/// containers, so on macOS they must live somewhere the Docker VM shares with
+/// the host: colima and Lima share only the home directory by default (not
+/// `/var/folders`, which is where `$TMPDIR` points), so we use
+/// `~/.cache/aco/run` there. `ACO_SCRATCH_DIR` overrides this everywhere.
+pub fn scratch_root() -> std::path::PathBuf {
+    if let Some(x) = std::env::var_os("ACO_SCRATCH_DIR") {
+        return std::path::PathBuf::from(x);
+    }
+    if cfg!(target_os = "linux") {
+        return std::env::temp_dir();
+    }
+    match std::env::var_os("HOME") {
+        Some(h) if !h.is_empty() => std::path::PathBuf::from(h).join(".cache/aco/run"),
+        _ => std::env::temp_dir(),
+    }
+}
+
 pub fn nonce_public() -> String {
     nonce()
 }
@@ -289,8 +307,7 @@ impl WorkDir {
         nonce: &str,
         deps_mount: Option<&str>,
     ) -> std::io::Result<Self> {
-        let dir =
-            std::env::temp_dir().join(format!("aco-{}-{}", std::process::id(), self::nonce()));
+        let dir = scratch_root().join(format!("aco-{}-{}", std::process::id(), self::nonce()));
         std::fs::create_dir_all(dir.join("files"))?;
         std::fs::create_dir_all(dir.join("root"))?;
         std::fs::write(dir.join("files/harness.py"), HARNESS)?;
