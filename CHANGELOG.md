@@ -24,6 +24,7 @@ First release.
 - Docker (`python:3.12-slim` pinned by digest): no network, read-only root, all capabilities dropped, `nobody`, pid/memory/CPU limits.
 - unshare fallback on Linux: user, mount, PID and network namespaces, a private root with read-only `/usr`, no capabilities, cleared environment, `prlimit` limits. Fails closed when user namespaces are unavailable.
 - No sandbox, no run: aco exits 3 and names what is missing.
+- On macOS, per-run scratch directories live under `~/.cache/aco/run`, because colima and Lima share only the home directory with the Docker VM (`$TMPDIR` is under `/var/folders`). `ACO_SCRATCH_DIR` overrides the location.
 
 ### Interface
 - Live Ratatui dashboard (progress, sparklines, candidate table, summary and winner diff), `--plain` line output, `--json` reports, colour honouring `NO_COLOR`, exit codes 0/1/2/3/130, signal-safe cancel that kills running sandboxes, and a clean exit when the terminal is closed.
@@ -35,7 +36,7 @@ First release.
 - One file is rewritten per run; installed packages are not rewritten or policy-checked (the sandbox contains them).
 - The output check covers the run's input, not every input.
 - PEP 701 f-strings that reuse the outer quote inside a replacement field cannot be parsed yet.
-- The macOS sandbox path (Docker on macOS) is not exercised end to end in CI.
+- Docker on macOS is tested end to end in CI only on Intel (`macos-15-intel` with colima: the Docker isolation tests and a real `fixtures/bubble.py` run). On Apple silicon, CI builds and runs the test suite without a sandbox and checks that aco refuses to run (exit 3). Docker Desktop and OrbStack are not tested.
 - Windows is supported only through WSL2.
 
 [0.1.0]: https://github.com/ayaan-cs/aco/releases/tag/v0.1.0
