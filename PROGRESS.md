@@ -47,3 +47,16 @@
 Known gaps: one file rewritten per run; package code is not policy-checked (sandbox is the boundary);
 PEP 701 f-strings with reused quotes cannot be parsed (rustpython-parser 0.4); the oracle checks the
 given input only; the real-model run used a 1.5B model on CPU.
+
+## Release v0.1.0
+
+- [x] README Install section, scripts/install.sh (banner, platform + dir, ✓ steps, PATH warning, try-it, macOS Docker note, TTY/NO_COLOR colour, --quiet/--version/--dir, uninstall hint, no fake delays), CHANGELOG 0.1.0
+- [x] rust-version = 1.88 in Cargo.toml, `msrv` CI job builds and tests with 1.88
+- [x] macOS CI: macos-15 (arm64) and macos-15-intel build, clippy, tests; no-sandbox exit 3 asserted (macos-14 retired 2026-11-02, macos-13 earlier)
+- [x] Docker on macOS end to end: macos-15-intel + colima, isolation tests and a real bubble.py run (CI run 41485001743); fixed scratch dirs (~/.cache/aco/run) so colima can mount them
+- [x] release.yml: 4 targets, static musl, smoke tests, Docker bubble run on Linux, SHA256SUMS, notes from CHANGELOG; dry run 41480122973 green
+- [ ] CI green on the tagged commit
+- [ ] tag v0.1.0 pushed, release workflow green, assets published
+- [ ] install.sh against the real release (box; Ayaan's computer was offline) + unshare bubble.py run
+- [ ] cargo install --git --tag v0.1.0 into a temp root
+- [ ] install capture (vhs) + still in README
