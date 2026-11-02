@@ -42,8 +42,13 @@ impl DockerRunner {
     fn quick(&self, args: &[&str], timeout: Duration) -> Result<(), String> {
         let mut cmd = Command::new(&self.bin);
         cmd.args(args);
-        let c = run_captured(cmd, timeout, 64 << 10, &|| {})
-            .map_err(|e| format!("`docker` could not be started: {e}"))?;
+        let c = run_captured(cmd, timeout, 64 << 10, &|| {}).map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                "`docker` is not installed (not found on PATH)".to_string()
+            } else {
+                format!("`docker` could not be started: {e}")
+            }
+        })?;
         if c.timed_out {
             return Err(format!("`docker {}` timed out", args.join(" ")));
         }

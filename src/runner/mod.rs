@@ -50,7 +50,7 @@ use std::hash::{BuildHasher, Hasher};
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Stdio};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -141,6 +141,19 @@ pub fn select(kind: SandboxKind, limits: Limits) -> Result<Box<dyn Runner>, Stri
     }
 }
 
+static ABORT: AtomicBool = AtomicBool::new(false);
+
+/// Kill every in-flight sandbox run and fail new ones. Used on Ctrl-C so no
+/// sandbox outlives `aco`. Process-wide and one-way.
+pub fn abort_all() {
+    ABORT.store(true, Ordering::SeqCst);
+}
+
+/// True once [`abort_all`] was called.
+pub fn aborted() -> bool {
+    ABORT.load(Ordering::SeqCst)
+}
+
 // ------------------------------------------------------------ internals
 
 pub(crate) fn nonce() -> String {
@@ -191,6 +204,7 @@ pub(crate) struct Captured {
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
     pub timed_out: bool,
+    pub aborted: bool,
 }
 
 fn read_capped(mut r: impl Read, cap: usize) -> Vec<u8> {
@@ -219,6 +233,12 @@ pub(crate) fn run_captured(
     on_timeout: &dyn Fn(),
 ) -> std::io::Result<Captured> {
     use std::os::unix::process::CommandExt;
+    if aborted() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Interrupted,
+            "cancelled",
+        ));
+    }
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -230,12 +250,15 @@ pub(crate) fn run_captured(
     let t_err = thread::spawn(move || read_capped(err, cap));
     let deadline = Instant::now() + timeout;
     let mut timed_out = false;
+    let mut was_aborted = false;
     let status = loop {
         if let Some(s) = child.try_wait()? {
             break Some(s);
         }
-        if Instant::now() >= deadline {
-            timed_out = true;
+        let abort = aborted();
+        if abort || Instant::now() >= deadline {
+            timed_out = !abort;
+            was_aborted = abort;
             on_timeout();
             let _ = Command::new("kill")
                 .args(["-KILL", "--", &format!("-{}", child.id())])
@@ -252,6 +275,7 @@ pub(crate) fn run_captured(
         stdout: t_out.join().unwrap_or_default(),
         stderr: t_err.join().unwrap_or_default(),
         timed_out,
+        aborted: was_aborted,
     })
 }
 
@@ -276,6 +300,9 @@ fn tail(bytes: &[u8], n: usize) -> String {
 /// Turn captured sandbox output into an [`Outcome`]. Missing or malformed
 /// harness output is an error, never a pass.
 pub(crate) fn parse_outcome(c: &Captured, nonce: &str) -> Outcome {
+    if c.aborted {
+        return Outcome::failed("cancelled");
+    }
     if c.timed_out {
         return Outcome {
             timed_out: true,

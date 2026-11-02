@@ -168,6 +168,40 @@ macro_rules! suite {
     };
 }
 
+fn memory_limit_holds(r: &dyn Runner) {
+    // Ask for ~1 GiB against a 256 MiB limit; the run must fail, not succeed.
+    let o = r.run("b = bytearray(1024 * 1024 * 1024)\nprint(len(b))\n", 1);
+    assert!(
+        !o.ok(),
+        "1 GiB allocation succeeded under a 256 MiB limit: {o:?}"
+    );
+    assert!(!o.stdout.contains("1073741824"));
+    // A modest allocation still works, so the limit is not just "everything fails".
+    let o = r.run("b = bytearray(32 * 1024 * 1024)\nprint(len(b))\n", 1);
+    assert!(o.ok(), "{o:?}");
+}
+
+fn small_memory() -> Limits {
+    Limits {
+        memory_mb: 256,
+        ..limits()
+    }
+}
+
+#[test]
+fn unshare_memory_limit() {
+    if unshare().is_some() {
+        memory_limit_holds(&UnshareRunner::new(small_memory()).unwrap());
+    }
+}
+
+#[test]
+fn docker_memory_limit() {
+    if docker().is_some() {
+        memory_limit_holds(&DockerRunner::new(small_memory()));
+    }
+}
+
 suite!(unshare_isolation, unshare());
 suite!(docker_isolation, docker());
 
