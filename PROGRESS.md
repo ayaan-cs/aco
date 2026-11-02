@@ -8,7 +8,7 @@
   - unshare isolation tests pass on this box; Docker cases skip (no Docker installed). Removing --net or the env scrub makes them fail (checked).
 - [x] 5. Local model proposer (OpenAI-compatible HTTP, mock-server test)
 - [x] 6. Interface (Ratatui TUI, --plain, --json)
-- [ ] 7. Docs and CI (LICENSE, README, SECURITY, CONTRIBUTING, ci.yml)
+- [x] 7. Docs and CI (LICENSE, README, SECURITY, CONTRIBUTING, ci.yml)
 - [ ] 9. Release run on fixtures, transcript and bench in release-run/
 - Not in this run: step 8 (portfolio sheet), pushing to GitHub.
 
