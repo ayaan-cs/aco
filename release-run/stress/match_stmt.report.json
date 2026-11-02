@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/syntax/match_stmt.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "match_stmt.py",
+    "mutated": "match_stmt.py",
+    "files": [
+      {
+        "path": "match_stmt.py",
+        "lines": 16,
+        "bytes": 326
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 2741023,
+    "times_ns": [
+      2622112,
+      2741023,
+      2511002,
+      3852180,
+      4765181
+    ],
+    "peak_rss_kb": 15984,
+    "exit_code": 0,
+    "stderr": null
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:concat:join",
+      "tokens": 0,
+      "median_ns": 1690122,
+      "times_ns": [
+        1625503,
+        1722425,
+        1583285,
+        1752174,
+        1690122
+      ],
+      "peak_rss_kb": 16388,
+      "speedup": 1.6217900246254413,
+      "reward": 1.46799873333415,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -10,7 +10,8 @@\n \n \n-out = \"\"\n+out_parts = []\n for i in range(20000):\n     if (k := kind(i % 2)) == \"zero\":\n-        out += k[0]\n+        out_parts.append(k[0])\n+out = \"\".join(out_parts)\n print(len(out))"
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 1,
+      "kept": 1,
+      "new_elite": true,
+      "best_origin": "rule:concat:join",
+      "best_median_ns": 1690122,
+      "best_peak_rss_kb": 16388,
+      "best_reward": 1.46799873333415,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:concat:join",
+      "best_median_ns": 1690122,
+      "best_peak_rss_kb": 16388,
+      "best_reward": 1.46799873333415,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
+  "confirmation": {
+    "origin": "rule:concat:join",
+    "rounds": 10,
+    "baseline_times_ns": [
+      2622156,
+      2331124,
+      2325737,
+      2335305,
+      2539764,
+      4068463,
+      2693883,
+      2633775,
+      2507970,
+      2596667
+    ],
+    "candidate_times_ns": [
+      1896876,
+      1661250,
+      1682675,
+      1810107,
+      2927209,
+      1703967,
+      1636699,
+      1797952,
+      2517474,
+      1603332
+    ],
+    "baseline_median_ns": 2568215,
+    "candidate_median_ns": 1750959,
+    "speedup": 1.466747650858758,
+    "candidate_wins": 8,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:concat:join",
+    "median_ns": 1750959,
+    "peak_rss_kb": 16388,
+    "speedup": 1.466747650858758,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run (8/10 rounds won, 10 hash seeds)",
+    "model_rewrite": false
+  },
+  "best_source": "# 3.10 match statement and a walrus: parsed and left alone.\ndef kind(v):\n    match v:\n        case 0:\n            return \"zero\"\n        case [x, *_]:\n            return \"list\"\n        case _:\n            return \"other\"\n\n\nout_parts = []\nfor i in range(20000):\n    if (k := kind(i % 2)) == \"zero\":\n        out_parts.append(k[0])\nout = \"\".join(out_parts)\nprint(len(out))\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 56295,
+    "parse_ns": 23745,
+    "policy_ns": 12182,
+    "deps_ns": 0,
+    "propose_ns": 432729,
+    "search_ns": 1063614415
+  }
+}

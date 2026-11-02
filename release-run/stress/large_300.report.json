@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/large_300.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "large_300.py",
+    "mutated": "large_300.py",
+    "files": [
+      {
+        "path": "large_300.py",
+        "lines": 309,
+        "bytes": 6545
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 54731440,
+    "times_ns": [
+      54624352,
+      54931910,
+      54640583,
+      54731440,
+      56542351
+    ],
+    "peak_rss_kb": 16772,
+    "exit_code": 0,
+    "stderr": null
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:bubble-sort:sorted",
+      "tokens": 0,
+      "median_ns": 34265170,
+      "times_ns": [
+        34289808,
+        34232255,
+        34265170,
+        33890354,
+        34720397
+      ],
+      "peak_rss_kb": 16748,
+      "speedup": 1.5972907766107682,
+      "reward": 1.4475054200641428,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -5,8 +5,5 @@\n def sort_scores(xs):\n     n = len(xs)\n-    for i in range(n):\n-        for j in range(n - 1 - i):\n-            if xs[j] > xs[j + 1]:\n-                xs[j], xs[j + 1] = xs[j + 1], xs[j]\n+    xs[:] = sorted(xs)\n     return xs\n "
+    },
+    {
+      "gen": 1,
+      "index": 1,
+      "origin": "rule:concat:join",
+      "tokens": 0,
+      "median_ns": 54801913,
+      "times_ns": [
+        55942853,
+        54462878,
+        54109208,
+        54801913,
+        55696488
+      ],
+      "peak_rss_kb": 18172,
+      "speedup": 0.9987140412415895,
+      "reward": 0.836193173128067,
+      "decision": "reject_margin",
+      "detail": null,
+      "change": "@@ -31,7 +31,8 @@\n \n def render(rows):\n-    out = \"\"\n+    out_parts = []\n     for r in rows:\n-        out += str(r) + \";\"\n+        out_parts.append(str(r) + \";\")\n+    out = \"\".join(out_parts)\n     return out\n "
+    },
+    {
+      "gen": 1,
+      "index": 2,
+      "origin": "rule:membership:set ×2",
+      "tokens": 0,
+      "median_ns": 22871896,
+      "times_ns": [
+        23369692,
+        22787061,
+        22871896,
+        22720747,
+        23041473
+      ],
+      "peak_rss_kb": 16940,
+      "speedup": 2.3929559665713764,
+      "reward": 2.241453462397754,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -15,6 +15,7 @@\n     known = [k for k in range(0, 9000, 3)]\n     hits = 0\n+    known_set = set(known)\n     for x in ids:\n-        if x in known:\n+        if x in known_set:\n             hits += 1\n     return hits\n@@ -24,6 +25,7 @@\n     small = [1, 2, 3]\n     found = 0\n+    small_set = set(small)\n     for v in range(4):\n-        if v in small:\n+        if v in small_set:\n             found += 1\n     return found"
+    },
+    {
+      "gen": 2,
+      "index": 3,
+      "origin": "rule:bubble-sort:sorted",
+      "tokens": 0,
+      "median_ns": 2478271,
+      "times_ns": [
+        2600447,
+        2478271,
+        2463483,
+        2443616,
+        2632445
+      ],
+      "peak_rss_kb": 16800,
+      "speedup": 22.084525865008306,
+      "reward": 21.934275447646037,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -5,8 +5,5 @@\n def sort_scores(xs):\n     n = len(xs)\n-    for i in range(n):\n-        for j in range(n - 1 - i):\n-            if xs[j] > xs[j + 1]:\n-                xs[j], xs[j + 1] = xs[j + 1], xs[j]\n+    xs[:] = sorted(xs)\n     return xs\n "
+    },
+    {
+      "gen": 2,
+      "index": 4,
+      "origin": "rule:concat:join",
+      "tokens": 0,
+      "median_ns": 22712764,
+      "times_ns": [
+        23120319,
+        22712764,
+        22606320,
+        22906456,
+        22456288
+      ],
+      "peak_rss_kb": 18140,
+      "speedup": 2.4097216877699252,
+      "reward": 2.247487010927569,
+      "decision": "reject_margin",
+      "detail": null,
+      "change": "@@ -33,7 +33,8 @@\n \n def render(rows):\n-    out = \"\"\n+    out_parts = []\n     for r in rows:\n-        out += str(r) + \";\"\n+        out_parts.append(str(r) + \";\")\n+    out = \"\".join(out_parts)\n     return out\n "
+    },
+    {
+      "gen": 2,
+      "index": 5,
+      "origin": "rule:bubble-sort:list.sort",
+      "tokens": 0,
+      "median_ns": 2562775,
+      "times_ns": [
+        2463556,
+        2433468,
+        2614746,
+        3241761,
+        2562775
+      ],
+      "peak_rss_kb": 16868,
+      "speedup": 21.356318834076344,
+      "reward": 21.205460260262846,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -5,8 +5,5 @@\n def sort_scores(xs):\n     n = len(xs)\n-    for i in range(n):\n-        for j in range(n - 1 - i):\n-            if xs[j] > xs[j + 1]:\n-                xs[j], xs[j + 1] = xs[j + 1], xs[j]\n+    xs.sort()\n     return xs\n "
+    },
+    {
+      "gen": 3,
+      "index": 6,
+      "origin": "rule:concat:join",
+      "tokens": 0,
+      "median_ns": 2510248,
+      "times_ns": [
+        2742678,
+        2510248,
+        2576685,
+        2506139,
+        2480271
+      ],
+      "peak_rss_kb": 18140,
+      "speedup": 21.80320032124316,
+      "reward": 21.640965644400804,
+      "decision": "reject_margin",
+      "detail": null,
+      "change": "@@ -30,7 +30,8 @@\n \n def render(rows):\n-    out = \"\"\n+    out_parts = []\n     for r in rows:\n-        out += str(r) + \";\"\n+        out_parts.append(str(r) + \";\")\n+    out = \"\".join(out_parts)\n     return out\n "
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 3,
+      "kept": 2,
+      "new_elite": true,
+      "best_origin": "rule:membership:set ×2",
+      "best_median_ns": 22871896,
+      "best_peak_rss_kb": 16940,
+      "best_reward": 2.241453462397754,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 3,
+      "kept": 2,
+      "new_elite": true,
+      "best_origin": "rule:bubble-sort:sorted",
+      "best_median_ns": 2478271,
+      "best_peak_rss_kb": 16800,
+      "best_reward": 21.934275447646037,
+      "tokens": 0
+    },
+    {
+      "gen": 3,
+      "evaluated": 1,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:bubble-sort:sorted",
+      "best_median_ns": 2478271,
+      "best_peak_rss_kb": 16800,
+      "best_reward": 21.934275447646037,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "reached --gens 3",
+  "confirmation": {
+    "origin": "rule:bubble-sort:sorted",
+    "rounds": 10,
+    "baseline_times_ns": [
+      55507736,
+      55161297,
+      55095370,
+      55474972,
+      56173834,
+      55862441,
+      58475020,
+      54546515,
+      57478816,
+      57155845
+    ],
+    "candidate_times_ns": [
+      2434363,
+      2742880,
+      2479764,
+      2523845,
+      2639424,
+      4173785,
+      2485271,
+      2664094,
+      2686121,
+      4426549
+    ],
+    "baseline_median_ns": 55685088,
+    "candidate_median_ns": 2651759,
+    "speedup": 20.999301972766002,
+    "candidate_wins": 10,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:bubble-sort:sorted",
+    "median_ns": 2651759,
+    "peak_rss_kb": 16800,
+    "speedup": 20.999301972766002,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
+    "model_rewrite": false
+  },
+  "best_source": "# Generated by scripts/gen_stress.py: a large module with the slow\n# patterns buried among unrelated code.\n\n\ndef sort_scores(xs):\n    n = len(xs)\n    xs[:] = sorted(xs)\n    return xs\n\n\ndef count_known(ids):\n    known = [k for k in range(0, 9000, 3)]\n    hits = 0\n    known_set = set(known)\n    for x in ids:\n        if x in known_set:\n            hits += 1\n    return hits\n\n\ndef tiny_lookup():\n    small = [1, 2, 3]\n    found = 0\n    small_set = set(small)\n    for v in range(4):\n        if v in small_set:\n            found += 1\n    return found\n\n\ndef render(rows):\n    out = \"\"\n    for r in rows:\n        out += str(r) + \";\"\n    return out\n\n\ndef stat_0(values):\n    total = 0\n    peak = None\n    for v in values:\n        total += v * 1\n        if peak is None or v > peak:\n            peak = v\n    return total, peak\n\nclass Point1:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def norm1(self):\n        return abs(self.x) + abs(self.y) + 1\n\ndef table_2(n):\n    rows = {}\n    for i in range(n):\n        rows[i] = (i * 5) % 97\n    return sum(rows.values())\n\ndef words_3(text):\n    counts = {}\n    for w in text.split():\n        counts[w] = counts.get(w, 0) + 1\n    return sorted(counts.items())[:3]\n\ndef stat_4(values):\n    total = 0\n    peak = None\n    for v in values:\n        total += v * 5\n        if peak is None or v > peak:\n            peak = v\n    return total, peak\n\nclass Point5:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def norm1(self):\n        return abs(self.x) + abs(self.y) + 5\n\ndef table_6(n):\n    rows = {}\n    for i in range(n):\n        rows[i] = (i * 9) % 97\n    return sum(rows.values())\n\ndef words_7(text):\n    counts = {}\n    for w in text.split():\n        counts[w] = counts.get(w, 0) + 2\n    return sorted(counts.items())[:3]\n\ndef stat_8(values):\n    total = 0\n    peak = None\n    for v in values:\n        total += v * 2\n        if peak is None or v > peak:\n            peak = v\n    return total, peak\n\nclass Point9:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def norm1(self):\n        return abs(self.x) + abs(self.y) + 9\n\ndef table_10(n):\n    rows = {}\n    for i in range(n):\n        rows[i] = (i * 13) % 97\n    return sum(rows.values())\n\ndef words_11(text):\n    counts = {}\n    for w in text.split():\n        counts[w] = counts.get(w, 0) + 3\n    return sorted(counts.items())[:3]\n\ndef stat_12(values):\n    total = 0\n    peak = None\n    for v in values:\n        total += v * 6\n        if peak is None or v > peak:\n            peak = v\n    return total, peak\n\nclass Point13:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def norm1(self):\n        return abs(self.x) + abs(self.y) + 13\n\ndef table_14(n):\n    rows = {}\n    for i in range(n):\n        rows[i] = (i * 17) % 97\n    return sum(rows.values())\n\ndef words_15(text):\n    counts = {}\n    for w in text.split():\n        counts[w] = counts.get(w, 0) + 1\n    return sorted(counts.items())[:3]\n\ndef stat_16(values):\n    total = 0\n    peak = None\n    for v in values:\n        total += v * 3\n        if peak is None or v > peak:\n            peak = v\n    return total, peak\n\nclass Point17:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def norm1(self):\n        return abs(self.x) + abs(self.y) + 17\n\ndef table_18(n):\n    rows = {}\n    for i in range(n):\n        rows[i] = (i * 21) % 97\n    return sum(rows.values())\n\ndef words_19(text):\n    counts = {}\n    for w in text.split():\n        counts[w] = counts.get(w, 0) + 2\n    return sorted(counts.items())[:3]\n\ndef stat_20(values):\n    total = 0\n    peak = None\n    for v in values:\n        total += v * 7\n        if peak is None or v > peak:\n            peak = v\n    return total, peak\n\nclass Point21:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def norm1(self):\n        return abs(self.x) + abs(self.y) + 21\n\ndef table_22(n):\n    rows = {}\n    for i in range(n):\n        rows[i] = (i * 25) % 97\n    return sum(rows.values())\n\ndef words_23(text):\n    counts = {}\n    for w in text.split():\n        counts[w] = counts.get(w, 0) + 3\n    return sorted(counts.items())[:3]\n\ndef stat_24(values):\n    total = 0\n    peak = None\n    for v in values:\n        total += v * 4\n        if peak is None or v > peak:\n            peak = v\n    return total, peak\n\nclass Point25:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def norm1(self):\n        return abs(self.x) + abs(self.y) + 25\n\ndef table_26(n):\n    rows = {}\n    for i in range(n):\n        rows[i] = (i * 29) % 97\n    return sum(rows.values())\n\ndef words_27(text):\n    counts = {}\n    for w in text.split():\n        counts[w] = counts.get(w, 0) + 1\n    return sorted(counts.items())[:3]\n\ndef stat_28(values):\n    total = 0\n    peak = None\n    for v in values:\n        total += v * 1\n        if peak is None or v > peak:\n            peak = v\n    return total, peak\n\ndef main():\n    seed = 7\n    data = []\n    for _ in range(900):\n        seed = (seed * 1103515245 + 12345) % 2147483648\n        data.append(seed % 10000)\n    ranked = sort_scores(list(data))\n    print(ranked[0], ranked[-1], ranked[450])\n    print(count_known([d % 9000 for d in data] * 4))\n    print(tiny_lookup())\n    print(len(render(range(30000))))\n    acc = 0\n    acc += stat_0([1, 2, 3, 0])[0]\n    acc += Point1(1, -2).norm1()\n    acc += table_2(20)\n    acc += len(words_3('a b a c b a'))\n    acc += stat_4([1, 2, 3, 4])[0]\n    acc += Point5(5, -2).norm1()\n    acc += table_6(20)\n    acc += len(words_7('a b a c b a'))\n    acc += stat_8([1, 2, 3, 8])[0]\n    acc += Point9(9, -2).norm1()\n    acc += table_10(20)\n    acc += len(words_11('a b a c b a'))\n    acc += stat_12([1, 2, 3, 12])[0]\n    acc += Point13(13, -2).norm1()\n    acc += table_14(20)\n    acc += len(words_15('a b a c b a'))\n    acc += stat_16([1, 2, 3, 16])[0]\n    acc += Point17(17, -2).norm1()\n    acc += table_18(20)\n    acc += len(words_19('a b a c b a'))\n    acc += stat_20([1, 2, 3, 20])[0]\n    acc += Point21(21, -2).norm1()\n    acc += table_22(20)\n    acc += len(words_23('a b a c b a'))\n    acc += stat_24([1, 2, 3, 24])[0]\n    acc += Point25(25, -2).norm1()\n    acc += table_26(20)\n    acc += len(words_27('a b a c b a'))\n    acc += stat_28([1, 2, 3, 28])[0]\n    print(acc)\n\n\nmain()\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 701064,
+    "parse_ns": 626619,
+    "policy_ns": 190907,
+    "deps_ns": 0,
+    "propose_ns": 14826377,
+    "search_ns": 3146230282
+  }
+}

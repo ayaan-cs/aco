@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/io/count_words.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "count_words.py",
+    "mutated": "count_words.py",
+    "files": [
+      {
+        "path": "count_words.py",
+        "lines": 16,
+        "bytes": 488
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [
+      "40"
+    ],
+    "stdin": "fixtures/stress/io/input.txt",
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 24335606,
+    "times_ns": [
+      24226314,
+      24560298,
+      24335207,
+      24555793,
+      24335606
+    ],
+    "peak_rss_kb": 16364,
+    "exit_code": 0,
+    "stderr": "processed 40 rounds\n"
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:membership:set",
+      "tokens": 0,
+      "median_ns": 22002676,
+      "times_ns": [
+        22298544,
+        22792232,
+        21919878,
+        22002676,
+        21922465
+      ],
+      "peak_rss_kb": 16380,
+      "speedup": 1.106029375699574,
+      "reward": 0.9558827122920942,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -7,7 +7,8 @@\n text = sys.stdin.read()\n kept = 0\n+stop_set = set(stop)\n for _ in range(times):\n     for w in text.split():\n-        if w.lower() not in stop:\n+        if w.lower() not in stop_set:\n             kept += 1\n print(kept)"
+    },
+    {
+      "gen": 1,
+      "index": 1,
+      "origin": "rule:membership:frozenset",
+      "tokens": 0,
+      "median_ns": 21710738,
+      "times_ns": [
+        21710738,
+        21758487,
+        21843708,
+        21626403,
+        21527141
+      ],
+      "peak_rss_kb": 16436,
+      "speedup": 1.1209018320795912,
+      "reward": 0.970241846745932,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -7,7 +7,8 @@\n text = sys.stdin.read()\n kept = 0\n+stop_set = frozenset(stop)\n for _ in range(times):\n     for w in text.split():\n-        if w.lower() not in stop:\n+        if w.lower() not in stop_set:\n             kept += 1\n print(kept)"
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 2,
+      "kept": 2,
+      "new_elite": true,
+      "best_origin": "rule:membership:frozenset",
+      "best_median_ns": 21710738,
+      "best_peak_rss_kb": 16436,
+      "best_reward": 0.970241846745932,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:membership:frozenset",
+      "best_median_ns": 21710738,
+      "best_peak_rss_kb": 16436,
+      "best_reward": 0.970241846745932,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
+  "confirmation": {
+    "origin": "rule:membership:frozenset",
+    "rounds": 10,
+    "baseline_times_ns": [
+      24868660,
+      24671526,
+      24278511,
+      24052031,
+      24640856,
+      25428318,
+      25067685,
+      25043544,
+      24544366,
+      23896503
+    ],
+    "candidate_times_ns": [
+      22182198,
+      21905004,
+      21611398,
+      22016386,
+      21471753,
+      22834546,
+      23688201,
+      22783638,
+      22430182,
+      21923408
+    ],
+    "baseline_median_ns": 24656191,
+    "candidate_median_ns": 22099292,
+    "speedup": 1.1157004939343758,
+    "candidate_wins": 10,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:membership:frozenset",
+    "median_ns": 22099292,
+    "peak_rss_kb": 16436,
+    "speedup": 1.1157004939343758,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
+    "model_rewrite": false
+  },
+  "best_source": "# Reads stdin and takes a repeat count from argv; exits with status 3 when\n# asked to, and reports to stderr.\nimport sys\n\ntimes = int(sys.argv[1]) if len(sys.argv) > 1 else 1\nstop = [\"the\", \"a\", \"of\", \"and\", \"to\", \"in\"]\ntext = sys.stdin.read()\nkept = 0\nstop_set = frozenset(stop)\nfor _ in range(times):\n    for w in text.split():\n        if w.lower() not in stop_set:\n            kept += 1\nprint(kept)\nprint(\"processed\", times, \"rounds\", file=sys.stderr)\nif len(sys.argv) > 2 and sys.argv[2] == \"fail\":\n    sys.exit(3)\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 81374,
+    "parse_ns": 42742,
+    "policy_ns": 17676,
+    "deps_ns": 0,
+    "propose_ns": 551453,
+    "search_ns": 2076019286
+  }
+}

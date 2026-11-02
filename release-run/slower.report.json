@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "tool": "aco 0.1.0",
   "file": "fixtures/slower.py",
   "sandbox": "unshare",
@@ -10,18 +11,38 @@
     "reps": 5,
     "margin": 0.05,
     "jobs": 2,
-    "token_budget": 512
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "slower.py",
+    "mutated": "slower.py",
+    "files": [
+      {
+        "path": "slower.py",
+        "lines": 11,
+        "bytes": 287
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
   },
   "baseline": {
-    "median_ns": 227062145,
+    "median_ns": 250116365,
     "times_ns": [
-      226581919,
-      226862199,
-      228793694,
-      229270835,
-      227062145
+      265685162,
+      249288113,
+      248433686,
+      274147676,
+      250116365
     ],
-    "peak_rss_kb": 15484
+    "peak_rss_kb": 15976,
+    "exit_code": 0,
+    "stderr": null
   },
   "candidates": [
     {
@@ -29,38 +50,40 @@
       "index": 0,
       "origin": "rule:membership:set",
       "tokens": 0,
-      "median_ns": 297822422,
+      "median_ns": 340989171,
       "times_ns": [
-        296033470,
-        303581489,
-        296502151,
-        304686007,
-        297822422
+        349442804,
+        336114364,
+        340989171,
+        347844293,
+        333190537
       ],
-      "peak_rss_kb": 15640,
-      "speedup": 0.7624078250226572,
-      "reward": 0.6108965876163023,
+      "peak_rss_kb": 15856,
+      "speedup": 0.7335023697864,
+      "reward": 0.5846290598214526,
       "decision": "reject_margin",
-      "detail": null
+      "detail": null,
+      "change": "@@ -5,6 +5,7 @@\n for row in range(1200000):\n     small = [row % 3, 5, 9]\n+    small_set = set(small)\n     for v in (1, 2, 3):\n-        if v in small:\n+        if v in small_set:\n             hits += 1\n "
     },
     {
       "gen": 1,
       "index": 1,
       "origin": "rule:membership:frozenset",
       "tokens": 0,
-      "median_ns": 300745331,
+      "median_ns": 336202598,
       "times_ns": [
-        297629222,
-        300745331,
-        311832109,
-        346667557,
-        297719618
+        372840671,
+        344658798,
+        332646047,
+        334088396,
+        336202598
       ],
-      "peak_rss_kb": 15676,
-      "speedup": 0.754998071773889,
-      "reward": 0.6031380872737598,
+      "peak_rss_kb": 15836,
+      "speedup": 0.7439453665375899,
+      "reward": 0.5952598382451513,
       "decision": "reject_margin",
-      "detail": null
+      "detail": null,
+      "change": "@@ -5,6 +5,7 @@\n for row in range(1200000):\n     small = [row % 3, 5, 9]\n+    small_set = frozenset(small)\n     for v in (1, 2, 3):\n-        if v in small:\n+        if v in small_set:\n             hits += 1\n "
     }
   ],
   "generations": [
@@ -70,8 +93,8 @@
       "kept": 0,
       "new_elite": false,
       "best_origin": "baseline",
-      "best_median_ns": 227062145,
-      "best_peak_rss_kb": 15484,
+      "best_median_ns": 250116365,
+      "best_peak_rss_kb": 15976,
       "best_reward": 0.85,
       "tokens": 0
     }
@@ -80,11 +103,21 @@
   "confirmation": null,
   "best": {
     "origin": "baseline",
-    "median_ns": 227062145,
-    "peak_rss_kb": 15484,
+    "median_ns": 250116365,
+    "peak_rss_kb": 15976,
     "speedup": 1.0,
     "confirmed": false,
-    "reason": "no candidate matched the oracle and cleared the time margin"
+    "reason": "no candidate matched the oracle and cleared the time margin",
+    "model_rewrite": false
   },
-  "best_source": "# A tight loop where hoisting a set looks clever but costs more than it saves:\n# the list is rebuilt every row and only probed three times.\n\nhits = 0\nfor row in range(1200000):\n    small = [row % 3, 5, 9]\n    for v in (1, 2, 3):\n        if v in small:\n            hits += 1\n\nprint(hits)\n"
+  "best_source": "# A tight loop where hoisting a set looks clever but costs more than it saves:\n# the list is rebuilt every row and only probed three times.\n\nhits = 0\nfor row in range(1200000):\n    small = [row % 3, 5, 9]\n    for v in (1, 2, 3):\n        if v in small:\n            hits += 1\n\nprint(hits)\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 23800,
+    "parse_ns": 14426,
+    "policy_ns": 4458,
+    "deps_ns": 0,
+    "propose_ns": 210734,
+    "search_ns": 3723406246
+  }
 }

@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/traps/set_output.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "set_output.py",
+    "mutated": "set_output.py",
+    "files": [
+      {
+        "path": "set_output.py",
+        "lines": 10,
+        "bytes": 358
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 11535193,
+    "times_ns": [
+      11663835,
+      11535193,
+      11592001,
+      11485117,
+      11527790
+    ],
+    "peak_rss_kb": 19180,
+    "exit_code": 0,
+    "stderr": null
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:membership:set",
+      "tokens": 0,
+      "median_ns": 6852446,
+      "times_ns": [
+        6816123,
+        6855668,
+        6990924,
+        6661893,
+        6852446
+      ],
+      "peak_rss_kb": 19152,
+      "speedup": 1.6833686832409915,
+      "reward": 1.5335876613431814,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -5,6 +5,7 @@\n known = [\"w%d\" % i for i in range(0, 50, 2)]\n hits = 0\n+known_set = set(known)\n for w in words:\n-    if w in known:\n+    if w in known_set:\n         hits += 1\n print(hits, set(words[:10]))"
+    },
+    {
+      "gen": 1,
+      "index": 1,
+      "origin": "rule:membership:frozenset",
+      "tokens": 0,
+      "median_ns": 6862598,
+      "times_ns": [
+        6977300,
+        6837181,
+        6903722,
+        6686412,
+        6862598
+      ],
+      "peak_rss_kb": 19212,
+      "speedup": 1.6808784370000982,
+      "reward": 1.5306281763118814,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -5,6 +5,7 @@\n known = [\"w%d\" % i for i in range(0, 50, 2)]\n hits = 0\n+known_set = frozenset(known)\n for w in words:\n-    if w in known:\n+    if w in known_set:\n         hits += 1\n print(hits, set(words[:10]))"
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 2,
+      "kept": 2,
+      "new_elite": true,
+      "best_origin": "rule:membership:set",
+      "best_median_ns": 6852446,
+      "best_peak_rss_kb": 19152,
+      "best_reward": 1.5335876613431814,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:membership:set",
+      "best_median_ns": 6852446,
+      "best_peak_rss_kb": 19152,
+      "best_reward": 1.5335876613431814,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
+  "confirmation": {
+    "origin": "rule:membership:set",
+    "rounds": 10,
+    "baseline_times_ns": [
+      15415152,
+      11751762,
+      11560596,
+      11669812,
+      12864255,
+      11673405,
+      11718316,
+      12392538,
+      11885488,
+      13660306
+    ],
+    "candidate_times_ns": [
+      6988970,
+      7138343,
+      6815365,
+      7771498,
+      7050949,
+      6971967,
+      6916660,
+      7119356,
+      6625399,
+      6896315
+    ],
+    "baseline_median_ns": 11818625,
+    "candidate_median_ns": 6980468,
+    "speedup": 1.6930992305960002,
+    "candidate_wins": 10,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:membership:set",
+    "median_ns": 6980468,
+    "peak_rss_kb": 19152,
+    "speedup": 1.6930992305960002,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
+    "model_rewrite": false
+  },
+  "best_source": "# Prints a set of strings, whose order depends on the hash seed. A correct\n# rewrite elsewhere must still be accepted: baseline and candidate share\n# the seed in every run.\nwords = [\"w%d\" % (i % 50) for i in range(60000)]\nknown = [\"w%d\" % i for i in range(0, 50, 2)]\nhits = 0\nknown_set = set(known)\nfor w in words:\n    if w in known_set:\n        hits += 1\nprint(hits, set(words[:10]))\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 55332,
+    "parse_ns": 23357,
+    "policy_ns": 9706,
+    "deps_ns": 0,
+    "propose_ns": 406102,
+    "search_ns": 1420195288
+  }
+}

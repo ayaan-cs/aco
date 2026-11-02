@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "tool": "aco 0.1.0",
   "file": "fixtures/lookup.py",
   "sandbox": "unshare",
@@ -10,18 +11,38 @@
     "reps": 5,
     "margin": 0.05,
     "jobs": 2,
-    "token_budget": 512
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "lookup.py",
+    "mutated": "lookup.py",
+    "files": [
+      {
+        "path": "lookup.py",
+        "lines": 9,
+        "bytes": 182
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
   },
   "baseline": {
-    "median_ns": 244105417,
+    "median_ns": 244493667,
     "times_ns": [
-      243926644,
-      260889929,
-      244105417,
-      242666955,
-      246260463
+      243362907,
+      243339417,
+      244493667,
+      247633171,
+      249899875
     ],
-    "peak_rss_kb": 15628
+    "peak_rss_kb": 15900,
+    "exit_code": 0,
+    "stderr": null
   },
   "candidates": [
     {
@@ -29,38 +50,40 @@
       "index": 0,
       "origin": "rule:membership:set",
       "tokens": 0,
-      "median_ns": 1351309,
+      "median_ns": 1379779,
       "times_ns": [
-        1358345,
-        1351309,
-        1327764,
-        1333121,
-        1605478
+        1461980,
+        1531795,
+        1379779,
+        1347908,
+        1367823
       ],
-      "peak_rss_kb": 15772,
-      "speedup": 180.6436699526163,
-      "reward": 180.49228781798615,
+      "peak_rss_kb": 16124,
+      "speedup": 177.1977012260659,
+      "reward": 177.04558801851874,
       "decision": "keep",
-      "detail": null
+      "detail": null,
+      "change": "@@ -3,6 +3,7 @@\n allowed = [i * 7 for i in range(2000)]\n hits = 0\n+allowed_set = set(allowed)\n for k in range(35000):\n-    if k in allowed:\n+    if k in allowed_set:\n         hits += 1\n "
     },
     {
       "gen": 1,
       "index": 1,
       "origin": "rule:membership:frozenset",
       "tokens": 0,
-      "median_ns": 1324442,
+      "median_ns": 1364354,
       "times_ns": [
-        1325610,
-        1324442,
-        1318998,
-        1284579,
-        1547373
+        1410479,
+        1361110,
+        1366630,
+        1364354,
+        1361080
       ],
-      "peak_rss_kb": 15780,
-      "speedup": 184.3081214579423,
-      "reward": 184.15666253805492,
+      "peak_rss_kb": 16180,
+      "speedup": 179.20104826166815,
+      "reward": 179.0484067522342,
       "decision": "keep",
-      "detail": null
+      "detail": null,
+      "change": "@@ -3,6 +3,7 @@\n allowed = [i * 7 for i in range(2000)]\n hits = 0\n+allowed_set = frozenset(allowed)\n for k in range(35000):\n-    if k in allowed:\n+    if k in allowed_set:\n         hits += 1\n "
     }
   ],
   "generations": [
@@ -70,9 +93,9 @@
       "kept": 2,
       "new_elite": true,
       "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 1324442,
-      "best_peak_rss_kb": 15780,
-      "best_reward": 184.15666253805492,
+      "best_median_ns": 1364354,
+      "best_peak_rss_kb": 16180,
+      "best_reward": 179.0484067522342,
       "tokens": 0
     },
     {
@@ -81,54 +104,77 @@
       "kept": 0,
       "new_elite": false,
       "best_origin": "rule:membership:frozenset",
-      "best_median_ns": 1324442,
-      "best_peak_rss_kb": 15780,
-      "best_reward": 184.15666253805492,
+      "best_median_ns": 1364354,
+      "best_peak_rss_kb": 16180,
+      "best_reward": 179.0484067522342,
       "tokens": 0
     }
   ],
-  "stop_reason": "early stop: 1 generation(s) without a new elite (--patience 1)",
+  "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
   "confirmation": {
     "origin": "rule:membership:frozenset",
     "rounds": 10,
     "baseline_times_ns": [
-      246077274,
-      245731858,
-      242043019,
-      247710122,
-      244761756,
-      262623637,
-      241037397,
-      248813222,
-      245889041,
-      252170466
+      244547281,
+      246044348,
+      244359166,
+      246404244,
+      244771934,
+      244213283,
+      301456616,
+      249644164,
+      246147150,
+      273181903
     ],
     "candidate_times_ns": [
-      1335963,
-      1334532,
-      1323444,
-      1339356,
-      1348998,
-      1335755,
-      1403129,
-      1335831,
-      1433691,
-      1331842
+      1348235,
+      1552766,
+      1340961,
+      1331851,
+      1323625,
+      1449570,
+      2376893,
+      1312211,
+      1328788,
+      1522796
     ],
-    "baseline_median_ns": 245983157,
-    "candidate_median_ns": 1335897,
-    "speedup": 184.13332539858988,
+    "baseline_median_ns": 246095749,
+    "candidate_median_ns": 1344598,
+    "speedup": 183.0255206388824,
+    "candidate_wins": 10,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
     "oracle_ok": true,
     "passed": true,
     "detail": null
   },
   "best": {
     "origin": "rule:membership:frozenset",
-    "median_ns": 1335897,
-    "peak_rss_kb": 15780,
-    "speedup": 184.13332539858988,
+    "median_ns": 1344598,
+    "peak_rss_kb": 16180,
+    "speedup": 183.0255206388824,
     "confirmed": true,
-    "reason": "confirmed by an interleaved re-run"
+    "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
+    "model_rewrite": false
   },
-  "best_source": "# Repeated membership tests against a list inside a loop.\n\nallowed = [i * 7 for i in range(2000)]\nhits = 0\nallowed_set = frozenset(allowed)\nfor k in range(35000):\n    if k in allowed_set:\n        hits += 1\n\nprint(hits)\n"
+  "best_source": "# Repeated membership tests against a list inside a loop.\n\nallowed = [i * 7 for i in range(2000)]\nhits = 0\nallowed_set = frozenset(allowed)\nfor k in range(35000):\n    if k in allowed_set:\n        hits += 1\n\nprint(hits)\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 21910,
+    "parse_ns": 13800,
+    "policy_ns": 4342,
+    "deps_ns": 0,
+    "propose_ns": 400693,
+    "search_ns": 7611427772
+  }
 }

@@ -123,9 +123,9 @@ def main():
            "| Case | Files / lines | Packages | Baseline | Winner median | Speedup | Rounds won | Result | Parse | Rules | Install | Search |",
            "|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in stress:
-        sp = f"{r['speedup']:.1f}x" if r["speedup"] else "-"
+        spd = sp(r)
         md.append(f"| {r['case']} | {r['files']} / {r['lines']} | {', '.join(r['packages']) or '-'} | "
-                  f"{ms(r['confirm_baseline_ns'] or r['baseline_ns'])} | {ms(r['best_ns']) if r['speedup'] else '-'} | {sp} | "
+                  f"{ms(r['confirm_baseline_ns'] or r['baseline_ns'])} | {ms(r["best_ns"]) if r["speedup"] else "-"} | {spd} | "
                   f"{r['wins'] or '-'} | {r['result']} | {r['parse_ms']:.1f} ms | {r['rules_ms']:.0f} ms | "
                   f"{r['deps_ms']:.0f} ms | {r['search_s']:.1f} s |")
     md += ["", "Install is the package step (cached here after the first run; a cold numpy install measured "

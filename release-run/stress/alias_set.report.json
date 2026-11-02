@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/traps/alias_set.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "alias_set.py",
+    "mutated": "alias_set.py",
+    "files": [
+      {
+        "path": "alias_set.py",
+        "lines": 10,
+        "bytes": 270
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 4392821,
+    "times_ns": [
+      4721349,
+      4633815,
+      4392821,
+      4242455,
+      4388196
+    ],
+    "peak_rss_kb": 15852,
+    "exit_code": 0,
+    "stderr": null
+  },
+  "candidates": [],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "baseline",
+      "best_median_ns": 4392821,
+      "best_peak_rss_kb": 15852,
+      "best_reward": 0.85,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
+  "confirmation": null,
+  "best": {
+    "origin": "baseline",
+    "median_ns": 4392821,
+    "peak_rss_kb": 15852,
+    "speedup": 1.0,
+    "confirmed": false,
+    "reason": "no candidate matched the oracle and cleared the time margin",
+    "model_rewrite": false
+  },
+  "best_source": "# `seen` is mutated through an alias inside the loop, so membership in a\n# set built before the loop would be stale. The rule must not fire.\nseen = []\nalias = seen\nout = 0\nfor i in range(3000):\n    if i % 50 in seen:\n        out += 1\n    alias.append(i % 37)\nprint(out)\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 48057,
+    "parse_ns": 15784,
+    "policy_ns": 8454,
+    "deps_ns": 0,
+    "propose_ns": 102450,
+    "search_ns": 67540542
+  }
+}

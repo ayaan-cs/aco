@@ -89,8 +89,11 @@ pub fn code_text(info: &crate::search::RunInfo) -> String {
     let n = info.files.len().max(1);
     let lines: usize = info.files.iter().map(|f| f.lines).sum();
     let mut s = format!("{n} file{} · {lines} lines", if n == 1 { "" } else { "s" });
-    if let Some(root) = &info.project_root {
-        s.push_str(&format!(" · root {root}"));
+    // The root is only worth showing when it is not the script's directory.
+    if let (Some(root), Some(t)) = (&info.project_root, &info.target) {
+        if t.contains('/') {
+            s.push_str(&format!(" · root {root}"));
+        }
     }
     if let (Some(m), Some(t)) = (&info.mutated, &info.target) {
         if m != t {

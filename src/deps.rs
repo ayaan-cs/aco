@@ -228,6 +228,16 @@ pub fn parse_pyproject(text: &str, name: &str) -> Result<Option<Vec<String>>, St
     Ok(Some(specs))
 }
 
+/// `p` relative to the current directory when it is under it, for messages.
+pub fn shown_path(p: &Path) -> String {
+    let abs = p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
+    std::env::current_dir()
+        .ok()
+        .and_then(|c| c.canonicalize().ok())
+        .and_then(|c| abs.strip_prefix(c).ok().map(|r| r.display().to_string()))
+        .unwrap_or_else(|| p.display().to_string())
+}
+
 /// Requirements for a run: `--requirements FILE` if given, else
 /// requirements.txt, else pyproject.toml `[project] dependencies`, looked up
 /// in the project root. `Ok(None)` when there are none.
@@ -237,7 +247,7 @@ pub fn discover(explicit: Option<&Path>, root: &Path) -> Result<Option<Requireme
     };
     if let Some(p) = explicit {
         let text = read(p)?;
-        let shown = p.display().to_string();
+        let shown = shown_path(p);
         let specs = if p.file_name().is_some_and(|n| n == "pyproject.toml") {
             parse_pyproject(&text, &shown)?.unwrap_or_default()
         } else {
@@ -250,7 +260,7 @@ pub fn discover(explicit: Option<&Path>, root: &Path) -> Result<Option<Requireme
     }
     let txt = root.join("requirements.txt");
     if txt.is_file() {
-        let shown = txt.display().to_string();
+        let shown = shown_path(&txt);
         let specs = parse_requirements_txt(&read(&txt)?, &shown)?;
         return Ok((!specs.is_empty()).then_some(Requirements {
             source: shown,
@@ -259,7 +269,7 @@ pub fn discover(explicit: Option<&Path>, root: &Path) -> Result<Option<Requireme
     }
     let py = root.join("pyproject.toml");
     if py.is_file() {
-        let shown = py.display().to_string();
+        let shown = shown_path(&py);
         if let Some(specs) = parse_pyproject(&read(&py)?, &shown)? {
             return Ok((!specs.is_empty()).then_some(Requirements {
                 source: format!("{shown} [project] dependencies"),

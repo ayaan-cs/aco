@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/stdlib_heavy.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "stdlib_heavy.py",
+    "mutated": "stdlib_heavy.py",
+    "files": [
+      {
+        "path": "stdlib_heavy.py",
+        "lines": 41,
+        "bytes": 1158
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 34836338,
+    "times_ns": [
+      35261650,
+      35181185,
+      34836338,
+      34821969,
+      34644595
+    ],
+    "peak_rss_kb": 17952,
+    "exit_code": 0,
+    "stderr": null
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:concat:join",
+      "tokens": 0,
+      "median_ns": 34110348,
+      "times_ns": [
+        34408785,
+        34184404,
+        34110348,
+        33784115,
+        33985483
+      ],
+      "peak_rss_kb": 20624,
+      "speedup": 1.0212835706044394,
+      "reward": 0.8489573673958832,
+      "decision": "reject_margin",
+      "detail": null,
+      "change": "@@ -32,7 +32,8 @@\n     top = [heapq.heappop(heap).name for _ in range(3)]\n     pairs = list(itertools.islice(itertools.combinations(range(30), 2), 5))\n-    log = \"\"\n+    log_parts = []\n     for i in range(40000):\n-        log += json.dumps([i % 7])\n+        log_parts.append(json.dumps([i % 7]))\n+    log = \"\".join(log_parts)\n     print(counts.most_common(2), sorted(groups)[:3], list(q), top, pairs, fib(60))\n     print(len(log))"
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 1,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "baseline",
+      "best_median_ns": 34836338,
+      "best_peak_rss_kb": 17952,
+      "best_reward": 0.85,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "early stop: 1 generation(s) without a new elite (--patience 1)",
+  "confirmation": null,
+  "best": {
+    "origin": "baseline",
+    "median_ns": 34836338,
+    "peak_rss_kb": 17952,
+    "speedup": 1.0,
+    "confirmed": false,
+    "reason": "no candidate matched the oracle and cleared the time margin",
+    "model_rewrite": false
+  },
+  "best_source": "# Standard-library heavy code: none of it may confuse import analysis or\n# the rules, and the one slow pattern (string building) is still found.\nimport heapq\nimport itertools\nimport json\nimport re\nfrom collections import Counter, defaultdict, deque\nfrom dataclasses import dataclass, field\nfrom functools import lru_cache\n\n\n@dataclass(order=True)\nclass Job:\n    priority: int\n    name: str = field(compare=False)\n\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\n\ndef main():\n    words = re.findall(r\"[a-z]+\", \"the quick brown fox jumps over the lazy dog \" * 200)\n    counts = Counter(words)\n    groups = defaultdict(list)\n    for w in words[:400]:\n        groups[len(w)].append(w)\n    q = deque(range(10), maxlen=5)\n    heap = [Job(p % 17, \"job%d\" % p) for p in range(300)]\n    heapq.heapify(heap)\n    top = [heapq.heappop(heap).name for _ in range(3)]\n    pairs = list(itertools.islice(itertools.combinations(range(30), 2), 5))\n    log = \"\"\n    for i in range(40000):\n        log += json.dumps([i % 7])\n    print(counts.most_common(2), sorted(groups)[:3], list(q), top, pairs, fib(60))\n    print(len(log))\n\n\nmain()\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 205050,
+    "parse_ns": 88246,
+    "policy_ns": 40381,
+    "deps_ns": 0,
+    "propose_ns": 751772,
+    "search_ns": 514613014
+  }
+}

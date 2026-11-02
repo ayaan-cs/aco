@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "tool": "aco 0.1.0",
   "file": "fixtures/bubble.py",
   "sandbox": "unshare",
@@ -10,18 +11,38 @@
     "reps": 5,
     "margin": 0.05,
     "jobs": 2,
-    "token_budget": 512
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "bubble.py",
+    "mutated": "bubble.py",
+    "files": [
+      {
+        "path": "bubble.py",
+        "lines": 20,
+        "bytes": 465
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
   },
   "baseline": {
-    "median_ns": 317726151,
+    "median_ns": 317624466,
     "times_ns": [
-      316725147,
-      317788929,
-      317726151,
-      317376827,
-      363489040
+      314415460,
+      341323714,
+      317624466,
+      317087796,
+      358481507
     ],
-    "peak_rss_kb": 16420
+    "peak_rss_kb": 16764,
+    "exit_code": 0,
+    "stderr": null
   },
   "candidates": [
     {
@@ -29,38 +50,40 @@
       "index": 0,
       "origin": "rule:bubble-sort:sorted",
       "tokens": 0,
-      "median_ns": 803220,
+      "median_ns": 876918,
       "times_ns": [
-        803220,
-        806028,
-        860067,
-        801599,
-        786787
+        849352,
+        878626,
+        876918,
+        976294,
+        791459
       ],
-      "peak_rss_kb": 16420,
-      "speedup": 395.5655374617166,
-      "reward": 395.4155374617166,
+      "peak_rss_kb": 16632,
+      "speedup": 362.20543539988915,
+      "reward": 362.05661650225136,
       "decision": "keep",
-      "detail": null
+      "detail": null,
+      "change": "@@ -4,8 +4,5 @@\n def bubble(xs):\n     n = len(xs)\n-    for i in range(n):\n-        for j in range(n - 1 - i):\n-            if xs[j] > xs[j + 1]:\n-                xs[j], xs[j + 1] = xs[j + 1], xs[j]\n+    xs[:] = sorted(xs)\n     return xs\n "
     },
     {
       "gen": 1,
       "index": 1,
       "origin": "rule:bubble-sort:list.sort",
       "tokens": 0,
-      "median_ns": 786911,
+      "median_ns": 788492,
       "times_ns": [
-        775606,
-        776063,
-        786911,
-        823677,
-        800277
+        830097,
+        782730,
+        786991,
+        794293,
+        788492
       ],
-      "peak_rss_kb": 16388,
-      "speedup": 403.7637687108199,
-      "reward": 403.6140610372511,
+      "peak_rss_kb": 16692,
+      "speedup": 402.825223337713,
+      "reward": 402.6758675753651,
       "decision": "keep",
-      "detail": null
+      "detail": null,
+      "change": "@@ -4,8 +4,5 @@\n def bubble(xs):\n     n = len(xs)\n-    for i in range(n):\n-        for j in range(n - 1 - i):\n-            if xs[j] > xs[j + 1]:\n-                xs[j], xs[j + 1] = xs[j + 1], xs[j]\n+    xs.sort()\n     return xs\n "
     }
   ],
   "generations": [
@@ -70,9 +93,9 @@
       "kept": 2,
       "new_elite": true,
       "best_origin": "rule:bubble-sort:list.sort",
-      "best_median_ns": 786911,
-      "best_peak_rss_kb": 16388,
-      "best_reward": 403.6140610372511,
+      "best_median_ns": 788492,
+      "best_peak_rss_kb": 16692,
+      "best_reward": 402.6758675753651,
       "tokens": 0
     },
     {
@@ -81,54 +104,77 @@
       "kept": 0,
       "new_elite": false,
       "best_origin": "rule:bubble-sort:list.sort",
-      "best_median_ns": 786911,
-      "best_peak_rss_kb": 16388,
-      "best_reward": 403.6140610372511,
+      "best_median_ns": 788492,
+      "best_peak_rss_kb": 16692,
+      "best_reward": 402.6758675753651,
       "tokens": 0
     }
   ],
-  "stop_reason": "early stop: 1 generation(s) without a new elite (--patience 1)",
+  "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
   "confirmation": {
     "origin": "rule:bubble-sort:list.sort",
     "rounds": 10,
     "baseline_times_ns": [
-      314650013,
-      383486210,
-      316776860,
-      314071122,
-      315739547,
-      319898655,
-      313847055,
-      319237404,
-      317721125,
-      314835365
+      319779602,
+      326668911,
+      316459087,
+      317416762,
+      317359481,
+      354360130,
+      320720644,
+      317853846,
+      319981954,
+      320467443
     ],
     "candidate_times_ns": [
-      808268,
-      817410,
-      761358,
-      894195,
-      802829,
-      795736,
-      786347,
-      780330,
-      829826,
-      870205
+      1476911,
+      780712,
+      784797,
+      768401,
+      775880,
+      766858,
+      892696,
+      773556,
+      791420,
+      769033
     ],
-    "baseline_median_ns": 316258203,
-    "candidate_median_ns": 805548,
-    "speedup": 392.6000722489535,
+    "baseline_median_ns": 319880778,
+    "candidate_median_ns": 778296,
+    "speedup": 411.00144161090384,
+    "candidate_wins": 10,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
     "oracle_ok": true,
     "passed": true,
     "detail": null
   },
   "best": {
     "origin": "rule:bubble-sort:list.sort",
-    "median_ns": 805548,
-    "peak_rss_kb": 16388,
-    "speedup": 392.6000722489535,
+    "median_ns": 778296,
+    "peak_rss_kb": 16692,
+    "speedup": 411.00144161090384,
     "confirmed": true,
-    "reason": "confirmed by an interleaved re-run"
+    "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
+    "model_rewrite": false
   },
-  "best_source": "# Pure-Python bubble sort of a few thousand pseudo-random ints.\n\n\ndef bubble(xs):\n    n = len(xs)\n    xs.sort()\n    return xs\n\n\nseed = 12345\ndata = []\nfor _ in range(3500):\n    seed = (seed * 1103515245 + 12345) % 2147483648\n    data.append(seed % 100000)\n\nout = bubble(data)\nprint(out[0], out[len(out) // 2], out[-1], sum(out[:100]))\n"
+  "best_source": "# Pure-Python bubble sort of a few thousand pseudo-random ints.\n\n\ndef bubble(xs):\n    n = len(xs)\n    xs.sort()\n    return xs\n\n\nseed = 12345\ndata = []\nfor _ in range(3500):\n    seed = (seed * 1103515245 + 12345) % 2147483648\n    data.append(seed % 100000)\n\nout = bubble(data)\nprint(out[0], out[len(out) // 2], out[-1], sum(out[:100]))\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 79279,
+    "parse_ns": 43509,
+    "policy_ns": 19873,
+    "deps_ns": 0,
+    "propose_ns": 600696,
+    "search_ns": 9307467972
+  }
 }

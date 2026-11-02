@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/tiny.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "tiny.py",
+    "mutated": "tiny.py",
+    "files": [
+      {
+        "path": "tiny.py",
+        "lines": 7,
+        "bytes": 156
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 2009,
+    "times_ns": [
+      3803,
+      2458,
+      1976,
+      2009,
+      1849
+    ],
+    "peak_rss_kb": 15832,
+    "exit_code": 0,
+    "stderr": null
+  },
+  "candidates": [],
+  "generations": [],
+  "stop_reason": "too fast to measure: baseline median 2.0 µs is under 1.000 ms",
+  "confirmation": null,
+  "best": {
+    "origin": "baseline",
+    "median_ns": 2009,
+    "peak_rss_kb": 15832,
+    "speedup": 1.0,
+    "confirmed": false,
+    "reason": "too fast to measure reliably; the original is kept",
+    "model_rewrite": false
+  },
+  "best_source": "# Runs in microseconds: any speedup is inside the noise.\nallowed = [2, 3, 5]\nhits = 0\nfor v in range(8):\n    if v in allowed:\n        hits += 1\nprint(hits)\n",
+  "notes": [
+    "too fast to measure reliably: the original runs in 2.0 µs per rep, under the 1.000 ms floor where run-to-run noise rivals the 5% margin; keeping the original"
+  ],
+  "timings": {
+    "project_ns": 43180,
+    "parse_ns": 13915,
+    "policy_ns": 7350,
+    "deps_ns": 0,
+    "propose_ns": 0,
+    "search_ns": 46254977
+  }
+}

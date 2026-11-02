@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/traps/duplicates_order.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "duplicates_order.py",
+    "mutated": "duplicates_order.py",
+    "files": [
+      {
+        "path": "duplicates_order.py",
+        "lines": 8,
+        "bytes": 288
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 88795929,
+    "times_ns": [
+      88795929,
+      88569101,
+      89919863,
+      89118368,
+      88701112
+    ],
+    "peak_rss_kb": 15884,
+    "exit_code": 0,
+    "stderr": null
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:membership:set",
+      "tokens": 0,
+      "median_ns": 576024,
+      "times_ns": [
+        576024,
+        569025,
+        573308,
+        733253,
+        658260
+      ],
+      "peak_rss_kb": 15860,
+      "speedup": 154.1531759093371,
+      "reward": 154.00340255250003,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -3,6 +3,7 @@\n order = [5, 3, 5, 1, 3, 3, 9, 1] * 400\n picked = []\n+order_set = set(order)\n for v in range(12000):\n-    if v % 13 in order:\n+    if v % 13 in order_set:\n         picked.append(v % 13)\n print(len(picked), picked[:10])"
+    },
+    {
+      "gen": 1,
+      "index": 1,
+      "origin": "rule:membership:frozenset",
+      "tokens": 0,
+      "median_ns": 575634,
+      "times_ns": [
+        576861,
+        571576,
+        568713,
+        575634,
+        721884
+      ],
+      "peak_rss_kb": 15844,
+      "speedup": 154.25761681902043,
+      "reward": 154.10799455762532,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -3,6 +3,7 @@\n order = [5, 3, 5, 1, 3, 3, 9, 1] * 400\n picked = []\n+order_set = frozenset(order)\n for v in range(12000):\n-    if v % 13 in order:\n+    if v % 13 in order_set:\n         picked.append(v % 13)\n print(len(picked), picked[:10])"
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 2,
+      "kept": 2,
+      "new_elite": true,
+      "best_origin": "rule:membership:frozenset",
+      "best_median_ns": 575634,
+      "best_peak_rss_kb": 15844,
+      "best_reward": 154.10799455762532,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:membership:frozenset",
+      "best_median_ns": 575634,
+      "best_peak_rss_kb": 15844,
+      "best_reward": 154.10799455762532,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
+  "confirmation": {
+    "origin": "rule:membership:frozenset",
+    "rounds": 10,
+    "baseline_times_ns": [
+      89416168,
+      106202087,
+      88704930,
+      89127171,
+      88817238,
+      88957821,
+      88859471,
+      88804375,
+      88494710,
+      89000912
+    ],
+    "candidate_times_ns": [
+      579985,
+      690925,
+      640754,
+      578648,
+      594507,
+      574648,
+      690054,
+      591686,
+      577370,
+      571483
+    ],
+    "baseline_median_ns": 88908646,
+    "candidate_median_ns": 585835,
+    "speedup": 151.7639710840083,
+    "candidate_wins": 10,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:membership:frozenset",
+    "median_ns": 585835,
+    "peak_rss_kb": 15844,
+    "speedup": 151.7639710840083,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
+    "model_rewrite": false
+  },
+  "best_source": "# Duplicates and order: membership does not depend on either, so the set\n# rewrite is safe here and must give identical output.\norder = [5, 3, 5, 1, 3, 3, 9, 1] * 400\npicked = []\norder_set = frozenset(order)\nfor v in range(12000):\n    if v % 13 in order_set:\n        picked.append(v % 13)\nprint(len(picked), picked[:10])\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 54859,
+    "parse_ns": 18112,
+    "policy_ns": 9675,
+    "deps_ns": 0,
+    "propose_ns": 318875,
+    "search_ns": 3317189829
+  }
+}

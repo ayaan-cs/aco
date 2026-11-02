@@ -700,7 +700,7 @@ fn prepare(d: &Diag, args: &Args, backend: &dyn Backend, path: &Path) -> Option<
         deps,
     };
     let info = RunInfo {
-        project_root: multi.then(|| proj.root.display().to_string()),
+        project_root: multi.then(|| shown_path(&proj.root)),
         target: Some(proj.target.clone()),
         mutated: Some(proj.mutated.clone()),
         files: proj

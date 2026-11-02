@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/encoding/bom.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": null,
+    "target": "bom.py",
+    "mutated": "bom.py",
+    "files": [
+      {
+        "path": "bom.py",
+        "lines": 8,
+        "bytes": 243
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 142170514,
+    "times_ns": [
+      139692423,
+      142150731,
+      143792210,
+      143371098,
+      142170514
+    ],
+    "peak_rss_kb": 16052,
+    "exit_code": 0,
+    "stderr": null
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:bubble-sort:sorted",
+      "tokens": 0,
+      "median_ns": 122806,
+      "times_ns": [
+        165648,
+        129060,
+        116799,
+        115869,
+        122806
+      ],
+      "peak_rss_kb": 15960,
+      "speedup": 1157.6837776655864,
+      "reward": 1157.534637371542,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -2,7 +2,4 @@\n xs = [(i * 7919) % 2000 for i in range(1800)]\n n = len(xs)\n-for i in range(n):\n-    for j in range(n - 1 - i):\n-        if xs[j] > xs[j + 1]:\n-            xs[j], xs[j + 1] = xs[j + 1], xs[j]\n+xs[:] = sorted(xs)\n print(xs[:5], xs[-5:])"
+    },
+    {
+      "gen": 1,
+      "index": 1,
+      "origin": "rule:bubble-sort:list.sort",
+      "tokens": 0,
+      "median_ns": 206589,
+      "times_ns": [
+        221017,
+        206589,
+        198727,
+        210326,
+        203845
+      ],
+      "peak_rss_kb": 15868,
+      "speedup": 688.1804645939523,
+      "reward": 688.0321840058635,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -2,7 +2,4 @@\n xs = [(i * 7919) % 2000 for i in range(1800)]\n n = len(xs)\n-for i in range(n):\n-    for j in range(n - 1 - i):\n-        if xs[j] > xs[j + 1]:\n-            xs[j], xs[j + 1] = xs[j + 1], xs[j]\n+xs.sort()\n print(xs[:5], xs[-5:])"
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 2,
+      "kept": 2,
+      "new_elite": true,
+      "best_origin": "rule:bubble-sort:sorted",
+      "best_median_ns": 122806,
+      "best_peak_rss_kb": 15960,
+      "best_reward": 1157.534637371542,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:bubble-sort:sorted",
+      "best_median_ns": 122806,
+      "best_peak_rss_kb": 15960,
+      "best_reward": 1157.534637371542,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
+  "confirmation": {
+    "origin": "rule:bubble-sort:sorted",
+    "rounds": 10,
+    "baseline_times_ns": [
+      138938404,
+      154804785,
+      161862131,
+      153005944,
+      154335553,
+      151033278,
+      138765059,
+      154201463,
+      153698379,
+      142551213
+    ],
+    "candidate_times_ns": [
+      125748,
+      133851,
+      154321,
+      139670,
+      182785,
+      136447,
+      172169,
+      143762,
+      178790,
+      132025
+    ],
+    "baseline_median_ns": 153352161,
+    "candidate_median_ns": 141716,
+    "speedup": 1082.1090138022523,
+    "candidate_wins": 10,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:bubble-sort:sorted",
+    "median_ns": 141716,
+    "peak_rss_kb": 15960,
+    "speedup": 1082.1090138022523,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
+    "model_rewrite": false
+  },
+  "best_source": "# UTF-8 with a byte-order mark\nxs = [(i * 7919) % 2000 for i in range(1800)]\nn = len(xs)\nxs[:] = sorted(xs)\nprint(xs[:5], xs[-5:])\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 67752,
+    "parse_ns": 32532,
+    "policy_ns": 14518,
+    "deps_ns": 0,
+    "propose_ns": 446844,
+    "search_ns": 4929902634
+  }
+}

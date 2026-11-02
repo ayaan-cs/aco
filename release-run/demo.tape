@@ -31,13 +31,23 @@ Sleep 1500ms
 Type "q"
 Sleep 2500ms
 
-Type "clear && aco --json --out demo-out fixtures/lookup.py"
+Type "clear && aco --out demo-out --mutate fixtures/stress/project/shop/inventory.py fixtures/stress/project/main.py"
 Sleep 400ms
 Enter
 Wait+Screen@120s /q quit/
-Sleep 4000ms
+Sleep 3500ms
+Screenshot release-run/still-4-project-mutate.png
+Sleep 1000ms
 Type "q"
 Sleep 2500ms
+
+Type "clear && aco --plain --out demo-out fixtures/stress/numpy_project/stats.py"
+Sleep 400ms
+Enter
+Wait+Screen@120s /faster, confirmed|original kept/
+Sleep 1000ms
+Screenshot release-run/still-5-numpy-plain.png
+Sleep 3500ms
 
 Type "clear && aco --plain --out demo-out fixtures/slower.py"
 Sleep 400ms

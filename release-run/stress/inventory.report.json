@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "tool": "aco 0.1.0",
+  "file": "fixtures/stress/project/main.py",
+  "sandbox": "unshare",
+  "proposer": "rules",
+  "config": {
+    "gens": 3,
+    "pop": 4,
+    "patience": 1,
+    "reps": 5,
+    "margin": 0.05,
+    "jobs": 2,
+    "token_budget": 512,
+    "min_baseline_ns": 1000000
+  },
+  "run": {
+    "project_root": "/workspace/aco/fixtures/stress/project",
+    "target": "main.py",
+    "mutated": "shop/inventory.py",
+    "files": [
+      {
+        "path": "main.py",
+        "lines": 9,
+        "bytes": 279
+      },
+      {
+        "path": "helpers.py",
+        "lines": 7,
+        "bytes": 183
+      },
+      {
+        "path": "shop/__init__.py",
+        "lines": 3,
+        "bytes": 45
+      },
+      {
+        "path": "shop/inventory.py",
+        "lines": 11,
+        "bytes": 270
+      },
+      {
+        "path": "shop/pricing.py",
+        "lines": 5,
+        "bytes": 94
+      },
+      {
+        "path": "shop/util.py",
+        "lines": 2,
+        "bytes": 53
+      }
+    ],
+    "requirements": null,
+    "packages": [],
+    "argv": [],
+    "stdin": null,
+    "notes": []
+  },
+  "baseline": {
+    "median_ns": 55672534,
+    "times_ns": [
+      59803714,
+      54067740,
+      55672534,
+      93276849,
+      54364980
+    ],
+    "peak_rss_kb": 16636,
+    "exit_code": 0,
+    "stderr": null
+  },
+  "candidates": [
+    {
+      "gen": 1,
+      "index": 0,
+      "origin": "rule:membership:set",
+      "tokens": 0,
+      "median_ns": 2355212,
+      "times_ns": [
+        2355212,
+        3037039,
+        2492294,
+        2254281,
+        2227224
+      ],
+      "peak_rss_kb": 16720,
+      "speedup": 23.638013902782426,
+      "reward": 23.487256509178195,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -5,6 +5,7 @@\n     discontinued = [\"sku%d\" % i for i in range(0, 5000, 2)]\n     restock = 0\n+    discontinued_set = set(discontinued)\n     for sku, qty in items:\n-        if sku in discontinued:\n+        if sku in discontinued_set:\n             continue\n         restock += clamp(30 - qty, 0, 30)"
+    },
+    {
+      "gen": 1,
+      "index": 1,
+      "origin": "rule:membership:frozenset",
+      "tokens": 0,
+      "median_ns": 2354049,
+      "times_ns": [
+        2405432,
+        3168327,
+        2318742,
+        2317197,
+        2354049
+      ],
+      "peak_rss_kb": 16744,
+      "speedup": 23.64969208372468,
+      "reward": 23.49871829194781,
+      "decision": "keep",
+      "detail": null,
+      "change": "@@ -5,6 +5,7 @@\n     discontinued = [\"sku%d\" % i for i in range(0, 5000, 2)]\n     restock = 0\n+    discontinued_set = frozenset(discontinued)\n     for sku, qty in items:\n-        if sku in discontinued:\n+        if sku in discontinued_set:\n             continue\n         restock += clamp(30 - qty, 0, 30)"
+    }
+  ],
+  "generations": [
+    {
+      "gen": 1,
+      "evaluated": 2,
+      "kept": 2,
+      "new_elite": true,
+      "best_origin": "rule:membership:frozenset",
+      "best_median_ns": 2354049,
+      "best_peak_rss_kb": 16744,
+      "best_reward": 23.49871829194781,
+      "tokens": 0
+    },
+    {
+      "gen": 2,
+      "evaluated": 0,
+      "kept": 0,
+      "new_elite": false,
+      "best_origin": "rule:membership:frozenset",
+      "best_median_ns": 2354049,
+      "best_peak_rss_kb": 16744,
+      "best_reward": 23.49871829194781,
+      "tokens": 0
+    }
+  ],
+  "stop_reason": "search exhausted: the proposer has no new candidates for the elite",
+  "confirmation": {
+    "origin": "rule:membership:frozenset",
+    "rounds": 10,
+    "baseline_times_ns": [
+      53540374,
+      52818412,
+      56019491,
+      54622251,
+      54904790,
+      54108312,
+      55263195,
+      54407009,
+      53190917,
+      52994644
+    ],
+    "candidate_times_ns": [
+      2464037,
+      2522031,
+      2510034,
+      2743267,
+      2635243,
+      2463052,
+      2662077,
+      2525474,
+      2625192,
+      2842148
+    ],
+    "baseline_median_ns": 54257660,
+    "candidate_median_ns": 2575333,
+    "speedup": 21.068211373053504,
+    "candidate_wins": 10,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "oracle_ok": true,
+    "passed": true,
+    "detail": null
+  },
+  "best": {
+    "origin": "rule:membership:frozenset",
+    "median_ns": 2575333,
+    "peak_rss_kb": 16744,
+    "speedup": 21.068211373053504,
+    "confirmed": true,
+    "reason": "confirmed by an interleaved re-run (10/10 rounds won, 10 hash seeds)",
+    "model_rewrite": false
+  },
+  "best_source": "from .util import clamp\n\n\ndef restock_report(items):\n    discontinued = [\"sku%d\" % i for i in range(0, 5000, 2)]\n    restock = 0\n    discontinued_set = frozenset(discontinued)\n    for sku, qty in items:\n        if sku in discontinued_set:\n            continue\n        restock += clamp(30 - qty, 0, 30)\n    return restock\n",
+  "notes": [],
+  "timings": {
+    "project_ns": 279053,
+    "parse_ns": 21150,
+    "policy_ns": 116040,
+    "deps_ns": 0,
+    "propose_ns": 501156,
+    "search_ns": 2555917723
+  }
+}

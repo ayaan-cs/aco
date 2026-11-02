@@ -1,47 +1,712 @@
-$ cargo run --release -- --plain --json --out release-run fixtures/bubble.py fixtures/concat.py fixtures/lookup.py fixtures/slower.py
-# 2026-11-02 02:18 CST on Linux 6.12.94+, Python 3.13.5, 8 CPUs
-== fixtures/bubble.py  sandbox=unshare  proposer=rules
-baseline          median 317.7 ms  rss 16.0 MB  reps 5
-gen 1 #0  rule:bubble-sort:sorted      median    0.803 ms  rss  16.0 MB  tokens    0  speedup  395.57x  reward  395.416  KEEP
-gen 1 #1  rule:bubble-sort:list.sort   median    0.787 ms  rss  16.0 MB  tokens    0  speedup  403.76x  reward  403.614  KEEP
-gen 1 done: 2 evaluated, 2 kept, elite rule:bubble-sort:list.sort at 0.787 ms (new elite)
-gen 2 done: 0 evaluated, 0 kept, elite rule:bubble-sort:list.sort at 0.787 ms
-stop: early stop: 1 generation(s) without a new elite (--patience 1)
-confirm rule:bubble-sort:list.sort: 10 interleaved rounds (baseline, candidate, ...) in fresh sandboxes
-confirm           baseline median 316.3 ms  candidate median 0.806 ms  speedup 392.60x  CONFIRMED
-best: rule:bubble-sort:list.sort  median 0.806 ms  speedup 392.60x  (confirmed by an interleaved re-run)
-note: wrote release-run/bubble.best.py
-note: wrote release-run/bubble.report.json
-== fixtures/concat.py  sandbox=unshare  proposer=rules
-baseline          median 258.3 ms  rss 15.8 MB  reps 5
-gen 1 #0  rule:concat:join             median    4.507 ms  rss  17.5 MB  tokens    0  speedup   57.32x  reward   57.154  KEEP
-gen 1 done: 1 evaluated, 1 kept, elite rule:concat:join at 4.507 ms (new elite)
-gen 2 done: 0 evaluated, 0 kept, elite rule:concat:join at 4.507 ms
-stop: early stop: 1 generation(s) without a new elite (--patience 1)
-confirm rule:concat:join: 10 interleaved rounds (baseline, candidate, ...) in fresh sandboxes
-confirm           baseline median 262.1 ms  candidate median 4.564 ms  speedup 57.42x  CONFIRMED
-best: rule:concat:join  median 4.564 ms  speedup 57.42x  (confirmed by an interleaved re-run)
-note: wrote release-run/concat.best.py
-note: wrote release-run/concat.report.json
-== fixtures/lookup.py  sandbox=unshare  proposer=rules
-baseline          median 244.1 ms  rss 15.3 MB  reps 5
-gen 1 #0  rule:membership:set          median    1.351 ms  rss  15.4 MB  tokens    0  speedup  180.64x  reward  180.492  KEEP
-gen 1 #1  rule:membership:frozenset    median    1.324 ms  rss  15.4 MB  tokens    0  speedup  184.31x  reward  184.157  KEEP
-gen 1 done: 2 evaluated, 2 kept, elite rule:membership:frozenset at 1.324 ms (new elite)
-gen 2 done: 0 evaluated, 0 kept, elite rule:membership:frozenset at 1.324 ms
-stop: early stop: 1 generation(s) without a new elite (--patience 1)
-confirm rule:membership:frozenset: 10 interleaved rounds (baseline, candidate, ...) in fresh sandboxes
-confirm           baseline median 246.0 ms  candidate median 1.336 ms  speedup 184.13x  CONFIRMED
-best: rule:membership:frozenset  median 1.336 ms  speedup 184.13x  (confirmed by an interleaved re-run)
-note: wrote release-run/lookup.best.py
-note: wrote release-run/lookup.report.json
-== fixtures/slower.py  sandbox=unshare  proposer=rules
-baseline          median 227.1 ms  rss 15.1 MB  reps 5
-gen 1 #0  rule:membership:set          median    297.8 ms  rss  15.3 MB  tokens    0  speedup    0.76x  reward    0.611  reject (not 5% faster)
-gen 1 #1  rule:membership:frozenset    median    300.7 ms  rss  15.3 MB  tokens    0  speedup    0.75x  reward    0.603  reject (not 5% faster)
-gen 1 done: 2 evaluated, 0 kept, elite baseline at 227.1 ms
-stop: early stop: 1 generation(s) without a new elite (--patience 1)
-best: baseline  median 227.1 ms  speedup 1.00x  (no candidate matched the oracle and cleared the time margin)
-note: wrote release-run/slower.best.py
-note: wrote release-run/slower.report.json
-# exit 0
+# 2026-11-02 04:36 CST on Linux 6.12.94+, Python 3.13.5, 8 CPUs, aco 0.1.0
+
+$ aco --plain --color never --json --out release-run fixtures/bubble.py fixtures/concat.py fixtures/lookup.py fixtures/slower.py
+aco 0.1.0 · fixtures/bubble.py
+  code      1 file · 20 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           317.6 ms  16.4 MB      0    1.00x  reference
+    1 rule:bubble-sort:sorted            876.9 µs  16.2 MB      0   362.2x  kept
+    1 rule:bubble-sort:list.sort         788.5 µs  16.3 MB      0   402.8x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:bubble-sort:list.sort at 788.5 µs
+  ─── gen 2: no new candidates · elite unchanged (rule:bubble-sort:list.sort)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:bubble-sort:list.sort against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 319.9 ms · candidate 778.3 µs · 411.0x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/bubble.py  411.0x faster, confirmed
+    baseline   319.9 ms   median of 10 interleaved runs (search phase: 317.6 ms)
+    optimized  778.3 µs   rule:bubble-sort:list.sort
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/bubble.best.py
+               /workspace/aco/release-run/bubble.report.json
+    change    
+      @@ -5,6 +5,3 @@
+           n = len(xs)
+      -    for i in range(n):
+      -        for j in range(n - 1 - i):
+      -            if xs[j] > xs[j + 1]:
+      -                xs[j], xs[j + 1] = xs[j + 1], xs[j]
+      +    xs.sort()
+           return xs
+
+aco 0.1.0 · fixtures/concat.py
+  code      1 file · 7 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           275.6 ms  16.0 MB      0    1.00x  reference
+    1 rule:concat:join                   4.361 ms  17.7 MB      0    63.2x  kept
+  ─── gen 1: 1 evaluated, 1 kept · new elite rule:concat:join at 4.361 ms
+  ─── gen 2: no new candidates · elite unchanged (rule:concat:join)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:concat:join against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 267.0 ms · candidate 4.745 ms · 56.3x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/concat.py  56.3x faster, confirmed
+    baseline   267.0 ms   median of 10 interleaved runs (search phase: 275.6 ms)
+    optimized  4.745 ms   rule:concat:join
+    searched   1 candidates, 1 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/concat.best.py
+               /workspace/aco/release-run/concat.report.json
+    change    
+      @@ -2,5 +2,6 @@
+       
+      -report = ""
+      +report_parts = []
+       for i in range(40000):
+      -    report += str(i * 31 % 9973) + ","
+      +    report_parts.append(str(i * 31 % 9973) + ",")
+      +report = "".join(report_parts)
+       
+
+aco 0.1.0 · fixtures/lookup.py
+  code      1 file · 9 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           244.5 ms  15.5 MB      0    1.00x  reference
+    1 rule:membership:set                1.380 ms  15.7 MB      0   177.2x  kept
+    1 rule:membership:frozenset          1.364 ms  15.8 MB      0   179.2x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:frozenset at 1.364 ms
+  ─── gen 2: no new candidates · elite unchanged (rule:membership:frozenset)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:membership:frozenset against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 246.1 ms · candidate 1.345 ms · 183.0x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/lookup.py  183.0x faster, confirmed
+    baseline   246.1 ms   median of 10 interleaved runs (search phase: 244.5 ms)
+    optimized  1.345 ms   rule:membership:frozenset
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/lookup.best.py
+               /workspace/aco/release-run/lookup.report.json
+    change    
+      @@ -4,4 +4,5 @@
+       hits = 0
+      +allowed_set = frozenset(allowed)
+       for k in range(35000):
+      -    if k in allowed:
+      +    if k in allowed_set:
+               hits += 1
+
+aco 0.1.0 · fixtures/slower.py
+  code      1 file · 11 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           250.1 ms  15.6 MB      0    1.00x  reference
+    1 rule:membership:set                341.0 ms  15.5 MB      0    0.73x  rejected: not 5% faster
+    1 rule:membership:frozenset          336.2 ms  15.5 MB      0    0.74x  rejected: not 5% faster
+  ─── gen 1: 2 evaluated, 0 kept · elite unchanged (baseline)
+  ─── stop: early stop: 1 generation(s) without a new elite (--patience 1)
+
+  – fixtures/slower.py  no faster version found, original kept
+    baseline   250.1 ms   median, search phase
+    reason     no candidate matched the oracle and cleared the time margin
+    searched   2 candidates, 0 kept
+    stopped    early stop: 1 generation(s) without a new elite (--patience 1)
+    wrote      /workspace/aco/release-run/slower.best.py  (unchanged copy of the original)
+               /workspace/aco/release-run/slower.report.json
+
+  file                 baseline       best  speedup  result
+  fixtures/bubble.py   319.9 ms   778.3 µs   411.0x  confirmed
+  fixtures/concat.py   267.0 ms   4.745 ms    56.3x  confirmed
+  fixtures/lookup.py   246.1 ms   1.345 ms   183.0x  confirmed
+  fixtures/slower.py   250.1 ms   250.1 ms    1.00x  original kept
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/large_300.py
+aco 0.1.0 · fixtures/stress/large_300.py
+  code      1 file · 309 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                            54.7 ms  16.4 MB      0    1.00x  reference
+    1 rule:bubble-sort:sorted             34.3 ms  16.4 MB      0    1.60x  kept
+    1 rule:concat:join                    54.8 ms  17.7 MB      0    1.00x  rejected: not 5% faster
+    1 rule:membership:set ×2              22.9 ms  16.5 MB      0    2.39x  kept
+  ─── gen 1: 3 evaluated, 2 kept · new elite rule:membership:set ×2 at 22.9 ms
+    2 rule:bubble-sort:sorted            2.478 ms  16.4 MB      0    22.1x  kept
+    2 rule:concat:join                    22.7 ms  17.7 MB      0    2.41x  rejected: not 5% faster
+    2 rule:bubble-sort:list.sort         2.563 ms  16.5 MB      0    21.4x  kept
+  ─── gen 2: 3 evaluated, 2 kept · new elite rule:bubble-sort:sorted at 2.478 ms
+    3 rule:concat:join                   2.510 ms  17.7 MB      0    21.8x  rejected: not 5% faster
+  ─── gen 3: 1 evaluated, 0 kept · elite unchanged (rule:bubble-sort:sorted)
+  ─── stop: reached --gens 3
+
+  confirm rule:bubble-sort:sorted against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 55.7 ms · candidate 2.652 ms · 21.0x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/large_300.py  21.0x faster, confirmed
+    baseline   55.7 ms    median of 10 interleaved runs (search phase: 54.7 ms)
+    optimized  2.652 ms   rule:bubble-sort:sorted
+    searched   7 candidates, 4 kept
+    stopped    reached --gens 3
+    wrote      /workspace/aco/release-run/stress/large_300.best.py
+               /workspace/aco/release-run/stress/large_300.report.json
+    change    
+      @@ -6,6 +6,3 @@
+           n = len(xs)
+      -    for i in range(n):
+      -        for j in range(n - 1 - i):
+      -            if xs[j] > xs[j + 1]:
+      -                xs[j], xs[j + 1] = xs[j + 1], xs[j]
+      +    xs[:] = sorted(xs)
+           return xs
+      @@ -16,4 +13,5 @@
+           hits = 0
+      +    known_set = set(known)
+           for x in ids:
+      -        if x in known:
+      +        if x in known_set:
+                   hits += 1
+      @@ -25,4 +23,5 @@
+           found = 0
+      +    small_set = set(small)
+           for v in range(4):
+      -        if v in small:
+      +        if v in small_set:
+                   found += 1
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/large_1000.py
+aco 0.1.0 · fixtures/stress/large_1000.py
+  code      1 file · 1009 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                            55.9 ms  18.2 MB      0    1.00x  reference
+    1 rule:bubble-sort:sorted             35.0 ms  18.2 MB      0    1.60x  kept
+    1 rule:concat:join                    55.0 ms  18.9 MB      0    1.02x  rejected: not 5% faster
+    1 rule:membership:set ×2              23.1 ms  18.2 MB      0    2.42x  kept
+  ─── gen 1: 3 evaluated, 2 kept · new elite rule:membership:set ×2 at 23.1 ms
+    2 rule:bubble-sort:sorted            2.604 ms  18.4 MB      0    21.5x  kept
+    2 rule:concat:join                    22.7 ms  19.2 MB      0    2.46x  rejected: not 5% faster
+    2 rule:bubble-sort:list.sort         2.563 ms  18.4 MB      0    21.8x  kept
+  ─── gen 2: 3 evaluated, 2 kept · new elite rule:bubble-sort:list.sort at 2.563 ms
+    3 rule:concat:join                   2.388 ms  19.4 MB      0    23.4x  kept
+  ─── gen 3: 1 evaluated, 1 kept · new elite rule:concat:join at 2.388 ms
+  ─── stop: reached --gens 3
+
+  confirm rule:concat:join against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 55.0 ms · candidate 2.356 ms · 23.3x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/large_1000.py  23.3x faster, confirmed
+    baseline   55.0 ms    median of 10 interleaved runs (search phase: 55.9 ms)
+    optimized  2.356 ms   rule:concat:join
+    searched   7 candidates, 5 kept
+    stopped    reached --gens 3
+    wrote      /workspace/aco/release-run/stress/large_1000.best.py
+               /workspace/aco/release-run/stress/large_1000.report.json
+    change    
+      @@ -6,6 +6,3 @@
+           n = len(xs)
+      -    for i in range(n):
+      -        for j in range(n - 1 - i):
+      -            if xs[j] > xs[j + 1]:
+      -                xs[j], xs[j + 1] = xs[j + 1], xs[j]
+      +    xs.sort()
+           return xs
+      @@ -16,4 +13,5 @@
+           hits = 0
+      +    known_set = set(known)
+           for x in ids:
+      -        if x in known:
+      +        if x in known_set:
+                   hits += 1
+      @@ -25,4 +23,5 @@
+           found = 0
+      +    small_set = set(small)
+           for v in range(4):
+      -        if v in small:
+      +        if v in small_set:
+                   found += 1
+      @@ -32,5 +31,6 @@
+       def render(rows):
+      … 7 more diff lines in the .best.py
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/large_3000.py
+aco 0.1.0 · fixtures/stress/large_3000.py
+  code      1 file · 3004 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                            54.9 ms  24.3 MB      0    1.00x  reference
+    1 rule:bubble-sort:sorted             34.9 ms  24.4 MB      0    1.57x  kept
+    1 rule:concat:join                    55.7 ms  24.3 MB      0    0.99x  rejected: not 5% faster
+    1 rule:membership:set ×2              27.4 ms  24.3 MB      0    2.01x  kept
+  ─── gen 1: 3 evaluated, 2 kept · new elite rule:membership:set ×2 at 27.4 ms
+    2 rule:bubble-sort:sorted            2.950 ms  24.4 MB      0    18.6x  kept
+    2 rule:concat:join                    23.8 ms  24.4 MB      0    2.31x  kept
+    2 rule:bubble-sort:list.sort         2.890 ms  24.5 MB      0    19.0x  kept
+  ─── gen 2: 3 evaluated, 3 kept · new elite rule:bubble-sort:list.sort at 2.890 ms
+    3 rule:concat:join                   2.657 ms  24.5 MB      0    20.7x  kept
+  ─── gen 3: 1 evaluated, 1 kept · new elite rule:concat:join at 2.657 ms
+  ─── stop: reached --gens 3
+
+  confirm rule:concat:join against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 55.2 ms · candidate 2.644 ms · 20.9x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/large_3000.py  20.9x faster, confirmed
+    baseline   55.2 ms    median of 10 interleaved runs (search phase: 54.9 ms)
+    optimized  2.644 ms   rule:concat:join
+    searched   7 candidates, 6 kept
+    stopped    reached --gens 3
+    wrote      /workspace/aco/release-run/stress/large_3000.best.py
+               /workspace/aco/release-run/stress/large_3000.report.json
+    change    
+      @@ -6,6 +6,3 @@
+           n = len(xs)
+      -    for i in range(n):
+      -        for j in range(n - 1 - i):
+      -            if xs[j] > xs[j + 1]:
+      -                xs[j], xs[j + 1] = xs[j + 1], xs[j]
+      +    xs.sort()
+           return xs
+      @@ -16,4 +13,5 @@
+           hits = 0
+      +    known_set = set(known)
+           for x in ids:
+      -        if x in known:
+      +        if x in known_set:
+                   hits += 1
+      @@ -25,4 +23,5 @@
+           found = 0
+      +    small_set = set(small)
+           for v in range(4):
+      -        if v in small:
+      +        if v in small_set:
+                   found += 1
+      @@ -32,5 +31,6 @@
+       def render(rows):
+      … 7 more diff lines in the .best.py
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress --mutate fixtures/stress/project/shop/inventory.py fixtures/stress/project/main.py
+aco 0.1.0 · fixtures/stress/project/main.py
+  code      6 files · 37 lines · root /workspace/aco/fixtures/stress/project · rewriting shop/inventory.py
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                            55.7 ms  16.2 MB      0    1.00x  reference
+    1 rule:membership:set                2.355 ms  16.3 MB      0    23.6x  kept
+    1 rule:membership:frozenset          2.354 ms  16.4 MB      0    23.6x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:frozenset at 2.354 ms
+  ─── gen 2: no new candidates · elite unchanged (rule:membership:frozenset)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:membership:frozenset against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 54.3 ms · candidate 2.575 ms · 21.1x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/project/main.py  21.1x faster, confirmed
+    baseline   54.3 ms    median of 10 interleaved runs (search phase: 55.7 ms)
+    optimized  2.575 ms   rule:membership:frozenset
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/inventory.best.py
+               /workspace/aco/release-run/stress/inventory.report.json
+    change    
+      @@ -6,4 +6,5 @@
+           restock = 0
+      +    discontinued_set = frozenset(discontinued)
+           for sku, qty in items:
+      -        if sku in discontinued:
+      +        if sku in discontinued_set:
+                   continue
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/numpy_project/stats.py
+aco 0.1.0 · fixtures/stress/numpy_project/stats.py
+  code      1 file · 14 lines
+  packages  more-itertools 10.5.0, numpy 2.3.4 (from /workspace/aco/fixtures/stress/numpy_project/requirements.txt)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           199.7 ms  37.5 MB      0    1.00x  reference
+    1 rule:membership:set                4.403 ms  37.4 MB      0    45.3x  kept
+    1 rule:membership:frozenset          4.312 ms  37.4 MB      0    46.3x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:frozenset at 4.312 ms
+  ─── gen 2: no new candidates · elite unchanged (rule:membership:frozenset)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:membership:frozenset against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 195.5 ms · candidate 4.316 ms · 45.3x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/numpy_project/stats.py  45.3x faster, confirmed
+    baseline   195.5 ms   median of 10 interleaved runs (search phase: 199.7 ms)
+    optimized  4.316 ms   rule:membership:frozenset
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/stats.best.py
+               /workspace/aco/release-run/stress/stats.report.json
+    change    
+      @@ -9,5 +9,6 @@
+       hits = 0
+      +labels_set = frozenset(labels)
+       for chunk in chunked(range(20000), 500):
+           for v in chunk:
+      -        if v in labels:
+      +        if v in labels_set:
+                   hits += 1
+note: installing numpy==2.3.4, more-itertools==10.5.0 from /workspace/aco/fixtures/stress/numpy_project/requirements.txt for the unshare sandbox (wheels only; cached after the first run)
+note: using cached packages for Python 3.13.5: more-itertools 10.5.0, numpy 2.3.4
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/stdlib_heavy.py
+aco 0.1.0 · fixtures/stress/stdlib_heavy.py
+  code      1 file · 41 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                            34.8 ms  17.5 MB      0    1.00x  reference
+    1 rule:concat:join                    34.1 ms  20.1 MB      0    1.02x  rejected: not 5% faster
+  ─── gen 1: 1 evaluated, 0 kept · elite unchanged (baseline)
+  ─── stop: early stop: 1 generation(s) without a new elite (--patience 1)
+
+  – fixtures/stress/stdlib_heavy.py  no faster version found, original kept
+    baseline   34.8 ms    median, search phase
+    reason     no candidate matched the oracle and cleared the time margin
+    searched   1 candidates, 0 kept
+    stopped    early stop: 1 generation(s) without a new elite (--patience 1)
+    wrote      /workspace/aco/release-run/stress/stdlib_heavy.best.py  (unchanged copy of the original)
+               /workspace/aco/release-run/stress/stdlib_heavy.report.json
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/traps/duplicates_order.py
+aco 0.1.0 · fixtures/stress/traps/duplicates_order.py
+  code      1 file · 8 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                            88.8 ms  15.5 MB      0    1.00x  reference
+    1 rule:membership:set                576.0 µs  15.5 MB      0   154.2x  kept
+    1 rule:membership:frozenset          575.6 µs  15.5 MB      0   154.3x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:frozenset at 575.6 µs
+  ─── gen 2: no new candidates · elite unchanged (rule:membership:frozenset)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:membership:frozenset against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 88.9 ms · candidate 585.8 µs · 151.8x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/traps/duplicates_order.py  151.8x faster, confirmed
+    baseline   88.9 ms    median of 10 interleaved runs (search phase: 88.8 ms)
+    optimized  585.8 µs   rule:membership:frozenset
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/duplicates_order.best.py
+               /workspace/aco/release-run/stress/duplicates_order.report.json
+    change    
+      @@ -4,4 +4,5 @@
+       picked = []
+      +order_set = frozenset(order)
+       for v in range(12000):
+      -    if v % 13 in order:
+      +    if v % 13 in order_set:
+               picked.append(v % 13)
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/traps/set_output.py
+aco 0.1.0 · fixtures/stress/traps/set_output.py
+  code      1 file · 10 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                            11.5 ms  18.7 MB      0    1.00x  reference
+    1 rule:membership:set                6.852 ms  18.7 MB      0    1.68x  kept
+    1 rule:membership:frozenset          6.863 ms  18.8 MB      0    1.68x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:set at 6.852 ms
+  ─── gen 2: no new candidates · elite unchanged (rule:membership:set)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:membership:set against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 11.8 ms · candidate 6.980 ms · 1.69x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/traps/set_output.py  1.69x faster, confirmed
+    baseline   11.8 ms    median of 10 interleaved runs (search phase: 11.5 ms)
+    optimized  6.980 ms   rule:membership:set
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/set_output.best.py
+               /workspace/aco/release-run/stress/set_output.report.json
+    change    
+      @@ -6,4 +6,5 @@
+       hits = 0
+      +known_set = set(known)
+       for w in words:
+      -    if w in known:
+      +    if w in known_set:
+               hits += 1
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/traps/alias_set.py
+aco 0.1.0 · fixtures/stress/traps/alias_set.py
+  code      1 file · 10 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           4.393 ms  15.5 MB      0    1.00x  reference
+  ─── gen 1: no new candidates · elite unchanged (baseline)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  – fixtures/stress/traps/alias_set.py  no faster version found, original kept
+    baseline   4.393 ms   median, search phase
+    reason     no candidate matched the oracle and cleared the time margin
+    searched   0 candidates, 0 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/alias_set.best.py  (unchanged copy of the original)
+               /workspace/aco/release-run/stress/alias_set.report.json
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress --stdin fixtures/stress/io/input.txt fixtures/stress/io/count_words.py -- 40
+aco 0.1.0 · fixtures/stress/io/count_words.py
+  code      1 file · 16 lines · args 40 · stdin fixtures/stress/io/input.txt
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                            24.3 ms  16.0 MB      0    1.00x  reference
+    1 rule:membership:set                 22.0 ms  16.0 MB      0    1.11x  kept
+    1 rule:membership:frozenset           21.7 ms  16.1 MB      0    1.12x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:membership:frozenset at 21.7 ms
+  ─── gen 2: no new candidates · elite unchanged (rule:membership:frozenset)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:membership:frozenset against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 24.7 ms · candidate 22.1 ms · 1.12x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/io/count_words.py  1.12x faster, confirmed
+    baseline   24.7 ms    median of 10 interleaved runs (search phase: 24.3 ms)
+    optimized  22.1 ms    rule:membership:frozenset
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/count_words.best.py
+               /workspace/aco/release-run/stress/count_words.report.json
+    change    
+      @@ -8,5 +8,6 @@
+       kept = 0
+      +stop_set = frozenset(stop)
+       for _ in range(times):
+           for w in text.split():
+      -        if w.lower() not in stop:
+      +        if w.lower() not in stop_set:
+                   kept += 1
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/io/seeded_random.py
+aco 0.1.0 · fixtures/stress/io/seeded_random.py
+  code      1 file · 10 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           101.0 ms  15.7 MB      0    1.00x  reference
+    1 rule:bubble-sort:sorted            503.4 µs  15.6 MB      0   200.7x  kept
+    1 rule:bubble-sort:list.sort         505.6 µs  15.7 MB      0   199.8x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:bubble-sort:sorted at 503.4 µs
+  ─── gen 2: no new candidates · elite unchanged (rule:bubble-sort:sorted)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:bubble-sort:sorted against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 103.9 ms · candidate 555.3 µs · 187.1x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/io/seeded_random.py  187.1x faster, confirmed
+    baseline   103.9 ms   median of 10 interleaved runs (search phase: 101.0 ms)
+    optimized  555.3 µs   rule:bubble-sort:sorted
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/seeded_random.best.py
+               /workspace/aco/release-run/stress/seeded_random.report.json
+    change    
+      @@ -5,6 +5,3 @@
+       n = len(xs)
+      -for i in range(n):
+      -    for j in range(n - 1 - i):
+      -        if xs[j] > xs[j + 1]:
+      -            xs[j], xs[j + 1] = xs[j + 1], xs[j]
+      +xs[:] = sorted(xs)
+       print(xs[:5], xs[-5:])
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/encoding/crlf.py
+aco 0.1.0 · fixtures/stress/encoding/crlf.py
+  code      1 file · 8 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           145.1 ms  15.6 MB      0    1.00x  reference
+    1 rule:bubble-sort:sorted            123.3 µs  15.6 MB      0  1176.9x  kept
+    1 rule:bubble-sort:list.sort         119.4 µs  15.4 MB      0  1216.0x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:bubble-sort:list.sort at 119.4 µs
+  ─── gen 2: no new candidates · elite unchanged (rule:bubble-sort:list.sort)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:bubble-sort:list.sort against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 149.0 ms · candidate 131.5 µs · 1132.9x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/encoding/crlf.py  1132.9x faster, confirmed
+    baseline   149.0 ms   median of 10 interleaved runs (search phase: 145.1 ms)
+    optimized  131.5 µs   rule:bubble-sort:list.sort
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/crlf.best.py
+               /workspace/aco/release-run/stress/crlf.report.json
+    change    
+      @@ -3,6 +3,3 @@
+       n = len(xs)
+      -for i in range(n):
+      -    for j in range(n - 1 - i):
+      -        if xs[j] > xs[j + 1]:
+      -            xs[j], xs[j + 1] = xs[j + 1], xs[j]
+      +xs.sort()
+       print(xs[:5], xs[-5:])
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/encoding/bom.py
+aco 0.1.0 · fixtures/stress/encoding/bom.py
+  code      1 file · 8 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           142.2 ms  15.7 MB      0    1.00x  reference
+    1 rule:bubble-sort:sorted            122.8 µs  15.6 MB      0  1157.7x  kept
+    1 rule:bubble-sort:list.sort         206.6 µs  15.5 MB      0   688.2x  kept
+  ─── gen 1: 2 evaluated, 2 kept · new elite rule:bubble-sort:sorted at 122.8 µs
+  ─── gen 2: no new candidates · elite unchanged (rule:bubble-sort:sorted)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:bubble-sort:sorted against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 153.4 ms · candidate 141.7 µs · 1082.1x · won 10/10  ✓ confirmed
+
+  ✓ fixtures/stress/encoding/bom.py  1082.1x faster, confirmed
+    baseline   153.4 ms   median of 10 interleaved runs (search phase: 142.2 ms)
+    optimized  141.7 µs   rule:bubble-sort:sorted
+    searched   2 candidates, 2 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/bom.best.py
+               /workspace/aco/release-run/stress/bom.report.json
+    change    
+      @@ -3,6 +3,3 @@
+       n = len(xs)
+      -for i in range(n):
+      -    for j in range(n - 1 - i):
+      -        if xs[j] > xs[j + 1]:
+      -            xs[j], xs[j + 1] = xs[j + 1], xs[j]
+      +xs[:] = sorted(xs)
+       print(xs[:5], xs[-5:])
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/syntax/match_stmt.py
+aco 0.1.0 · fixtures/stress/syntax/match_stmt.py
+  code      1 file · 16 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                           2.741 ms  15.6 MB      0    1.00x  reference
+    1 rule:concat:join                   1.690 ms  16.0 MB      0    1.62x  kept
+  ─── gen 1: 1 evaluated, 1 kept · new elite rule:concat:join at 1.690 ms
+  ─── gen 2: no new candidates · elite unchanged (rule:concat:join)
+  ─── stop: search exhausted: the proposer has no new candidates for the elite
+
+  confirm rule:concat:join against the baseline, 10 interleaved runs in fresh sandboxes (hash seeds 1-10)
+          baseline 2.568 ms · candidate 1.751 ms · 1.47x · won 8/10  ✓ confirmed
+
+  ✓ fixtures/stress/syntax/match_stmt.py  1.47x faster, confirmed
+    baseline   2.568 ms   median of 10 interleaved runs (search phase: 2.741 ms)
+    optimized  1.751 ms   rule:concat:join
+    searched   1 candidates, 1 kept
+    stopped    search exhausted: the proposer has no new candidates for the elite
+    wrote      /workspace/aco/release-run/stress/match_stmt.best.py
+               /workspace/aco/release-run/stress/match_stmt.report.json
+    change    
+      @@ -11,6 +11,7 @@
+       
+      -out = ""
+      +out_parts = []
+       for i in range(20000):
+           if (k := kind(i % 2)) == "zero":
+      -        out += k[0]
+      +        out_parts.append(k[0])
+      +out = "".join(out_parts)
+       print(len(out))
+(exit 0)
+
+$ aco --plain --color never --json --out release-run/stress fixtures/stress/tiny.py
+aco 0.1.0 · fixtures/stress/tiny.py
+  code      1 file · 7 lines
+  packages  none (standard library only)
+  sandbox   unshare
+  proposer  rules
+  search    3 gens · pop 4 · patience 1 · 5 reps · margin 5% · 2 jobs
+
+  gen candidate                            median      RSS tokens  speedup  decision
+    0 baseline                             2.0 µs  15.5 MB      0    1.00x  reference
+  note: too fast to measure reliably: the original runs in 2.0 µs per rep, under the 1.000 ms floor where run-to-run noise rivals the 5% margin; keeping the original
+  ─── stop: too fast to measure: baseline median 2.0 µs is under 1.000 ms
+
+  – fixtures/stress/tiny.py  no faster version found, original kept
+    baseline   2.0 µs     median, search phase
+    reason     too fast to measure reliably; the original is kept
+    searched   0 candidates, 0 kept
+    stopped    too fast to measure: baseline median 2.0 µs is under 1.000 ms
+    wrote      /workspace/aco/release-run/stress/tiny.best.py  (unchanged copy of the original)
+               /workspace/aco/release-run/stress/tiny.report.json
+(exit 0)
