@@ -17,6 +17,10 @@ jobs:
           components: clippy, rustfmt
       - name: cargo fmt
         run: cargo fmt --check
+      - name: install script (shellcheck, dash)
+        run: |
+          shellcheck -s sh scripts/install.sh
+          dash scripts/install.sh --help
       - name: stress fixtures are reproducible
         run: python3 scripts/gen_stress.py && git diff --exit-code fixtures/stress
       - name: cargo clippy
@@ -40,3 +44,77 @@ jobs:
           grep -q "using cached packages" rerun.txt
       - name: end-to-end, 3000-line file (docker sandbox)
         run: cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out --json fixtures/stress/large_3000.py
+
+  # The minimum supported Rust version in Cargo.toml (rust-version), built and
+  # tested with the locked dependencies.
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88
+      - name: rust-version matches this job
+        run: grep -qx 'rust-version = "1.88"' Cargo.toml
+      - name: cargo test (Rust 1.88)
+        run: cargo test --locked -- --nocapture
+
+  # GitHub's macOS runners have no Docker and macOS has no unshare, so every
+  # sandbox test skips here (with its reason in the log). This job proves the
+  # build, clippy, the non-sandbox tests and the no-sandbox exit path.
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: machine
+        run: |
+          uname -a
+          sw_vers
+          if command -v docker >/dev/null; then docker version || true; else echo "docker CLI not installed"; fi
+      - name: cargo clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: cargo test
+        run: cargo test --locked -- --nocapture
+      - name: without a sandbox aco refuses to run and exits 3
+        run: |
+          cargo build --locked
+          set +e
+          ./target/debug/aco --plain fixtures/bubble.py 2> err.txt
+          code=$?
+          set -e
+          cat err.txt
+          test "$code" -eq 3
+          grep -q "no sandbox is available" err.txt
+          grep -q "Linux-only" err.txt
+          set +e
+          ./target/debug/aco --plain --sandbox unshare fixtures/bubble.py 2> err2.txt
+          code=$?
+          set -e
+          cat err2.txt
+          test "$code" -eq 3
+          grep -q "not available on macos" err2.txt
+
+  # Experiment: Docker through colima on the Intel macOS runner. Allowed to
+  # fail; see the README for what macOS coverage actually is.
+  macos-docker:
+    runs-on: macos-15-intel
+    continue-on-error: true
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: start colima
+        timeout-minutes: 15
+        run: |
+          brew install colima docker
+          colima start --cpu 2 --memory 4
+          docker version
+      - name: Docker sandbox tests
+        run: cargo test --locked --test sandbox -- --nocapture docker
+      - name: end-to-end (docker sandbox)
+        run: cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out fixtures/bubble.py

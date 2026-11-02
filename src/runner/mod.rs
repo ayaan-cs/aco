@@ -221,7 +221,8 @@ pub fn select(kind: SandboxKind, limits: Limits) -> Result<Box<dyn Backend>, Str
             };
             if !cfg!(target_os = "linux") {
                 return Err(format!(
-                    "no sandbox available. docker: {docker_err}. unshare: the namespace fallback is Linux-only. Install Docker."
+                    "no sandbox available, refusing to run candidates.\n  docker: {docker_err}\n  unshare: Linux-only (this is {}); on macOS, install and start Docker Desktop, OrbStack or colima so that `docker version` works",
+                    std::env::consts::OS
                 ));
             }
             match UnshareRunner::new(limits).and_then(|u| u.probe().map(|_| u)) {

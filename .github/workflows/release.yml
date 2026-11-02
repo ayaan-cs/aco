@@ -1,0 +1,133 @@
+name: release
+
+# Tags v* build, smoke-test and publish. A manual run (workflow_dispatch) does
+# everything except publishing, to check the build before tagging.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Every target builds natively, so every binary is smoke-tested on
+          # the machine type it is for.
+          - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04, docker: true }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04-arm, docker: true }
+          - { target: x86_64-apple-darwin, os: macos-15-intel, docker: false }
+          - { target: aarch64-apple-darwin, os: macos-15, docker: false }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: musl toolchain (ring's C code needs a musl C compiler)
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq musl-tools
+      - name: version
+        id: v
+        shell: bash
+        run: |
+          crate=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then
+            tag="${GITHUB_REF_NAME}"
+            [ "$tag" = "v$crate" ] || { echo "::error::tag $tag does not match Cargo.toml version $crate"; exit 1; }
+          else
+            tag="v$crate"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: inspect binary
+        shell: bash
+        run: |
+          bin=target/${{ matrix.target }}/release/aco
+          file "$bin"
+          ls -l "$bin"
+          case "${{ matrix.target }}" in
+            *linux-musl) file "$bin" | grep -Eq "static(ally|-pie) linked" ;;
+          esac
+      - name: smoke test (--version, --help)
+        shell: bash
+        run: |
+          bin=target/${{ matrix.target }}/release/aco
+          "$bin" --version | tee version.txt
+          grep -qx "aco ${{ steps.v.outputs.tag }}" <(sed 's/^aco /aco v/' version.txt)
+          "$bin" --help | grep -q -- "--sandbox"
+      - name: smoke test (real run under Docker)
+        if: matrix.docker
+        run: |
+          docker version --format 'docker server {{.Server.Version}}'
+          target/${{ matrix.target }}/release/aco --plain --sandbox docker --reps 3 --out smoke-out fixtures/bubble.py | tee smoke.txt
+          grep -q "faster, confirmed" smoke.txt
+      - name: smoke test (no sandbox on macOS exits 3)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set +e
+          target/${{ matrix.target }}/release/aco --plain fixtures/bubble.py 2> err.txt
+          code=$?
+          set -e
+          cat err.txt
+          [ "$code" -eq 3 ] && grep -q "Linux-only" err.txt
+      - name: package
+        shell: bash
+        run: |
+          name=aco-${{ steps.v.outputs.tag }}-${{ matrix.target }}
+          mkdir "$name"
+          cp target/${{ matrix.target }}/release/aco LICENSE README.md CHANGELOG.md "$name/"
+          tar -czf "$name.tar.gz" "$name"
+          ls -l "$name.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aco-${{ matrix.target }}
+          path: aco-*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: checksums
+        working-directory: dist
+        run: |
+          sha256sum aco-*.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+          sha256sum -c SHA256SUMS
+      - name: release notes from CHANGELOG.md
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          test -s notes.md
+          cat notes.md
+      - name: create the GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/aco-*.tar.gz dist/SHA256SUMS \
+            --title "aco ${GITHUB_REF_NAME}" --notes-file notes.md --verify-tag
+      - name: dry run (manual trigger)
+        if: github.ref_type != 'tag'
+        run: |
+          ls -l dist
+          echo "manual run: built and checked, not published"

@@ -10,6 +10,58 @@ Repository: https://github.com/ayaan-cs/aco
 
 A 62-second real terminal recording (bubble.py in the dashboard, a multi-file project with `--mutate`, numpy with its requirements in `--plain`, then slower.py rejected) is at [release-run/demo.mp4](release-run/demo.mp4); its script is [release-run/demo.tape](release-run/demo.tape).
 
+## Install
+
+aco is one binary (static on Linux). It runs Python only inside a sandbox, so it also needs **Docker** or, on Linux, **unprivileged user namespaces**, plus **python3**.
+
+| | Prebuilt binary | Sandbox aco uses | Also needs |
+|---|---|---|---|
+| Linux x86_64 / aarch64 | yes (static, musl) | Docker if the daemon answers, else `unshare` (util-linux) with unprivileged user namespaces | `python3` under `/usr` for the unshare sandbox |
+| macOS arm64 / x86_64 | yes | Docker only: Docker Desktop, OrbStack or colima, running | nothing else (packages are installed inside the Docker image; a host `python3` only improves the message for syntax aco cannot parse) |
+| Windows | no | not supported natively. Under WSL2, install the Linux build inside the distribution and use Docker Desktop's WSL integration (or unshare, if the WSL kernel allows unprivileged user namespaces). WSL2 is not tested in CI. | |
+
+Without a working sandbox aco exits with status 3 and says what is missing; it never runs code unsandboxed.
+
+**Install script** (Linux and macOS; POSIX sh, no sudo):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ayaan-cs/aco/main/scripts/install.sh | sh
+# a pinned version and another directory:
+curl -fsSL https://raw.githubusercontent.com/ayaan-cs/aco/main/scripts/install.sh | sh -s -- --version v0.1.0 --dir ~/bin
+```
+
+It detects the OS and CPU, downloads the matching archive from the [latest release](https://github.com/ayaan-cs/aco/releases/latest) (or `--version`), checks it against the release's `SHA256SUMS`, refuses to install on a mismatch, and puts `aco` in `~/.local/bin` (or `--dir` / `$ACO_INSTALL_DIR`). It tells you if that directory is not on your `PATH`. `--quiet` prints only the installed path; colour follows the terminal and `NO_COLOR`. Uninstall with `rm ~/.local/bin/aco` (cache: `~/.cache/aco`).
+
+**Manual download.** Each [release](https://github.com/ayaan-cs/aco/releases) has `aco-<version>-<target>.tar.gz` for `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`, `x86_64-apple-darwin` and `aarch64-apple-darwin`, and a `SHA256SUMS` file:
+
+```sh
+v=v0.1.0 t=aarch64-apple-darwin
+curl -fLO https://github.com/ayaan-cs/aco/releases/download/$v/aco-$v-$t.tar.gz
+curl -fLO https://github.com/ayaan-cs/aco/releases/download/$v/SHA256SUMS
+grep " aco-$v-$t.tar.gz$" SHA256SUMS | shasum -a 256 -c -     # Linux: sha256sum -c -
+tar -xzf aco-$v-$t.tar.gz && mv aco-$v-$t/aco ~/.local/bin/
+```
+
+The macOS binaries are not signed or notarized. A file downloaded with a browser gets the quarantine attribute and Gatekeeper blocks it; remove it with `xattr -d com.apple.quarantine ~/.local/bin/aco` (curl downloads, including the install script, are not quarantined).
+
+**With Cargo** (Rust 1.88 or newer):
+
+```sh
+cargo install --locked --git https://github.com/ayaan-cs/aco --tag v0.1.0
+# or from a checkout
+git clone https://github.com/ayaan-cs/aco && cd aco && cargo build --release --locked   # binary: target/release/aco
+```
+
+`--locked` uses the tested dependency versions; without it Cargo picks the newest compatible ones, which may need a newer Rust.
+
+**First run:**
+
+```sh
+aco --help
+git clone https://github.com/ayaan-cs/aco && cd aco
+aco fixtures/bubble.py            # live dashboard; `aco --plain ...` for line output
+```
+
 ## How a run works
 
 ```mermaid
@@ -42,11 +94,10 @@ reward = speedup - 0.15 * memory_ratio - 0.05 * token_ratio
 
 `speedup` is baseline median over candidate median, `memory_ratio` is candidate peak RSS over baseline peak RSS, and `token_ratio` is model tokens over `--token-budget` (512). Rules cost 0 tokens. Time is the gate; memory and tokens only break ties between passing candidates, and keep a model from winning with a huge rewrite.
 
-## Build and run
+## Usage
 
 ```sh
-cargo build --release
-./target/release/aco --plain fixtures/bubble.py fixtures/concat.py fixtures/lookup.py fixtures/slower.py
+aco --plain fixtures/bubble.py fixtures/concat.py fixtures/lookup.py fixtures/slower.py
 ```
 
 `aco --help` lists every option by group (Search, Proposer, Sandbox, Output) with examples and exit codes.

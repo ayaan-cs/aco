@@ -101,6 +101,12 @@ fn find_tool(name: &str) -> Option<PathBuf> {
 
 impl UnshareRunner {
     pub fn new(limits: Limits) -> Result<Self, String> {
+        if !cfg!(target_os = "linux") {
+            return Err(format!(
+                "the unshare sandbox uses Linux namespaces and is not available on {}; use Docker",
+                std::env::consts::OS
+            ));
+        }
         let unshare_bin =
             find_tool("unshare").ok_or("the `unshare` binary (util-linux) was not found")?;
         let python = ["/usr/bin/python3", "/usr/local/bin/python3"]
