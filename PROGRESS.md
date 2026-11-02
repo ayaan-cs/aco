@@ -6,7 +6,7 @@
   - Real-runner search tests (keep+confirm bubble/concat/lookup, reject slower) land with step 4.
 - [x] 4. Sandbox (Docker runner, unshare fallback, isolation tests)
   - unshare isolation tests pass on this box; Docker cases skip (no Docker installed). Removing --net or the env scrub makes them fail (checked).
-- [ ] 5. Local model proposer (OpenAI-compatible HTTP, mock-server test)
+- [x] 5. Local model proposer (OpenAI-compatible HTTP, mock-server test)
 - [ ] 6. Interface (Ratatui TUI, --plain, --json)
 - [ ] 7. Docs and CI (LICENSE, README, SECURITY, CONTRIBUTING, ci.yml)
 - [ ] 9. Release run on fixtures, transcript and bench in release-run/

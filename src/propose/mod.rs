@@ -1,5 +1,7 @@
 //! Proposers turn a source file into candidate rewrites.
 
+pub mod http;
+
 use serde::Serialize;
 
 /// One proposed replacement for the whole file.
