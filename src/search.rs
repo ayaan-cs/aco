@@ -103,6 +103,8 @@ pub struct Best {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Report {
+    /// Bumped when a field is renamed or removed.
+    pub schema_version: u32,
     pub tool: String,
     pub file: String,
     pub sandbox: String,
@@ -125,6 +127,12 @@ pub enum Event {
         file: String,
         sandbox: String,
         proposer: String,
+        config: Config,
+    },
+    /// A generation is about to evaluate `batch` candidates.
+    GenStart {
+        gen: usize,
+        batch: usize,
     },
     Baseline(Measured),
     Candidate(CandidateRecord),
@@ -135,8 +143,66 @@ pub enum Event {
         origin: String,
         rounds: usize,
     },
+    /// One interleaved confirmation round (baseline and candidate) finished.
+    ConfirmRound {
+        done: usize,
+        rounds: usize,
+    },
     Confirm(Confirmation),
     Best(Best),
+    /// The file is done and its outputs are on disk. Sent by the caller of
+    /// [`optimize`] after writing them.
+    Finished(Box<Summary>),
+}
+
+/// What the end-of-run summary shows for one file. Every number is copied from
+/// the [`Report`]; nothing here is estimated.
+#[derive(Clone, Debug)]
+pub struct Summary {
+    pub file: String,
+    /// Baseline median from the search phase.
+    pub baseline_ns: u64,
+    /// Baseline median from the interleaved confirmation re-run, if one ran.
+    pub confirm_baseline_ns: Option<u64>,
+    pub best_origin: String,
+    /// Winner's median from the confirmation re-run (or the baseline's).
+    pub best_ns: u64,
+    pub speedup: f64,
+    pub confirmed: bool,
+    pub reason: String,
+    pub stop_reason: String,
+    pub rounds: Option<usize>,
+    pub evaluated: usize,
+    pub kept: usize,
+    pub original: String,
+    pub best_source: String,
+    pub written: Vec<std::path::PathBuf>,
+}
+
+impl Summary {
+    pub fn new(report: &Report, original: &str, written: Vec<std::path::PathBuf>) -> Self {
+        Summary {
+            file: report.file.clone(),
+            baseline_ns: report.baseline.median_ns,
+            confirm_baseline_ns: report.confirmation.as_ref().map(|c| c.baseline_median_ns),
+            best_origin: report.best.origin.clone(),
+            best_ns: report.best.median_ns,
+            speedup: report.best.speedup,
+            confirmed: report.best.confirmed,
+            reason: report.best.reason.clone(),
+            stop_reason: report.stop_reason.clone(),
+            rounds: report.confirmation.as_ref().map(|c| c.rounds),
+            evaluated: report.candidates.len(),
+            kept: report
+                .candidates
+                .iter()
+                .filter(|c| c.decision == Decision::Keep)
+                .count(),
+            original: original.to_string(),
+            best_source: report.best_source.clone(),
+            written,
+        }
+    }
 }
 
 struct Elite {
@@ -219,6 +285,7 @@ pub fn optimize(
         file: file.to_string(),
         sandbox: runner.name().to_string(),
         proposer: proposer.name(),
+        config: cfg.clone(),
     });
 
     let baseline = runner.run(source, cfg.reps);
@@ -302,6 +369,10 @@ pub fn optimize(
         }
 
         let sources: Vec<String> = batch.iter().map(|c| c.source.clone()).collect();
+        emit(Event::GenStart {
+            gen,
+            batch: batch.len(),
+        });
         let reference = elite.outcome.median_ns;
         let mut best_new: Option<(usize, f64, Outcome)> = None;
         let mut kept = 0;
@@ -369,6 +440,15 @@ pub fn optimize(
         };
         emit(Event::Generation(g.clone()));
         generations.push(g);
+        if cancel.load(Ordering::SeqCst) {
+            stop_reason = "cancelled".into();
+            break;
+        }
+        if batch.is_empty() && !new_elite && proposer.deterministic() {
+            stop_reason =
+                "search exhausted: the proposer has no new candidates for the elite".into();
+            break;
+        }
         if stale >= cfg.patience.max(1) && gen < cfg.gens {
             stop_reason = format!(
                 "early stop: {stale} generation(s) without a new elite (--patience {})",
@@ -434,6 +514,7 @@ pub fn optimize(
     };
 
     Ok(Report {
+        schema_version: 1,
         tool: format!("aco {}", env!("CARGO_PKG_VERSION")),
         file: file.to_string(),
         sandbox: runner.name().to_string(),
@@ -469,7 +550,7 @@ fn confirm(
     let mut ct = Vec::with_capacity(rounds);
     let mut oracle_ok = true;
     let mut detail = None;
-    for _ in 0..rounds {
+    for round in 0..rounds {
         if cancel.load(Ordering::SeqCst) {
             detail = Some("cancelled".to_string());
             break;
@@ -486,6 +567,10 @@ fn confirm(
         oracle_ok &= oracle.matches(&c);
         bt.push(b.times_ns[0]);
         ct.push(c.times_ns[0]);
+        emit(Event::ConfirmRound {
+            done: round + 1,
+            rounds,
+        });
     }
     let bm = median(&bt);
     let cm = median(&ct);

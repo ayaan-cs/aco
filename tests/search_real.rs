@@ -49,9 +49,12 @@ fn assert_kept_and_confirmed(r: &Report, origin_prefix: &str) {
     assert!(r.best.speedup > 1.05);
     let c = r.confirmation.as_ref().unwrap();
     assert!(c.passed && c.oracle_ok);
+    // Big enough that timer noise cannot decide the result. The absolute size
+    // depends on the interpreter: concat.py measured ~258 ms on a Debian box's
+    // CPython 3.13 but ~47 ms in CI's Docker image (CPython 3.12).
     assert!(
-        r.baseline.median_ns >= 150_000_000,
-        "fixture too small: {} ns",
+        r.baseline.median_ns >= 20_000_000,
+        "fixture too small to time reliably: {} ns",
         r.baseline.median_ns
     );
 }

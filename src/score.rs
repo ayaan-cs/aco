@@ -56,7 +56,7 @@ impl Decision {
             Decision::RejectTimeout => "reject (timeout)",
             Decision::RejectError => "reject (error)",
             Decision::RejectOracle => "reject (output differs)",
-            Decision::RejectMargin => "reject (not 5% faster)",
+            Decision::RejectMargin => "reject (under margin)",
         }
     }
 }

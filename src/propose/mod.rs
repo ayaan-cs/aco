@@ -24,6 +24,11 @@ pub trait Proposer: Send + Sync {
     fn take_notes(&self) -> Vec<String> {
         Vec::new()
     }
+    /// True when the same input always yields the same proposals, so an
+    /// unchanged elite with nothing new to try means the search is exhausted.
+    fn deterministic(&self) -> bool {
+        false
+    }
 }
 
 /// The default proposer: deterministic AST rules with zero token cost.
@@ -33,6 +38,10 @@ pub struct RuleProposer;
 impl Proposer for RuleProposer {
     fn name(&self) -> String {
         "rules".into()
+    }
+
+    fn deterministic(&self) -> bool {
+        true
     }
 
     fn propose(&self, source: &str) -> Vec<Candidate> {
@@ -65,5 +74,9 @@ impl Proposer for Combined {
 
     fn take_notes(&self) -> Vec<String> {
         self.0.iter().flat_map(|p| p.take_notes()).collect()
+    }
+
+    fn deterministic(&self) -> bool {
+        self.0.iter().all(|p| p.deterministic())
     }
 }
