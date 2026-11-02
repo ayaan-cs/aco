@@ -10,7 +10,17 @@ use ratatui::Terminal;
 fn events() -> Vec<Event> {
     let runner = FakeRunner::new(400_000_000, vec![("sorted(xs)", 2_000_000, "same")]);
     let mut ev = Vec::new();
-    optimize("fixtures/bubble.py", include_str!("../fixtures/bubble.py"), &RuleProposer, &runner, &Config::default(), None, &no_cancel(), &mut |e| ev.push(e)).unwrap();
+    optimize(
+        "fixtures/bubble.py",
+        include_str!("../fixtures/bubble.py"),
+        &RuleProposer,
+        &runner,
+        &Config::default(),
+        None,
+        &no_cancel(),
+        &mut |e| ev.push(e),
+    )
+    .unwrap();
     ev
 }
 
@@ -20,7 +30,9 @@ fn plain_prints_one_line_per_event_with_decisions() {
     let lines: Vec<String> = ev.iter().map(plain_line).collect();
     assert_eq!(lines.len(), ev.len());
     assert!(lines[0].starts_with("== fixtures/bubble.py  sandbox=fake  proposer=rules"));
-    assert!(lines.iter().any(|l| l.contains("rule:bubble-sort:sorted") && l.ends_with("KEEP")));
+    assert!(lines
+        .iter()
+        .any(|l| l.contains("rule:bubble-sort:sorted") && l.ends_with("KEEP")));
     assert!(lines.iter().any(|l| l.contains("CONFIRMED")));
     assert!(lines.iter().any(|l| l.starts_with("stop: early stop")));
 }
@@ -35,7 +47,15 @@ fn dashboard_renders_sparklines_and_table() {
     t.draw(|f| d.draw(f)).unwrap();
     let buf = t.backend().buffer().clone();
     let text: String = buf.content().iter().map(|c| c.symbol()).collect();
-    for needle in ["best median per gen", "peak RSS", "tokens per gen", "candidates", "rule:bubble-sort:sorted", "KEEP", "confirmed rule:bubble-sort:sorted"] {
+    for needle in [
+        "best median per gen",
+        "peak RSS",
+        "tokens per gen",
+        "candidates",
+        "rule:bubble-sort:sorted",
+        "KEEP",
+        "confirmed rule:bubble-sort:sorted",
+    ] {
         assert!(text.contains(needle), "missing {needle}");
     }
 }

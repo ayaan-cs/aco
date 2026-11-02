@@ -127,7 +127,11 @@ pub struct Dashboard {
 impl Dashboard {
     pub fn apply(&mut self, e: &Event) {
         match e {
-            Event::Start { file, sandbox, proposer } => {
+            Event::Start {
+                file,
+                sandbox,
+                proposer,
+            } => {
                 self.title = format!(" aco  {file}  sandbox={sandbox}  proposer={proposer} ");
                 self.best_us.clear();
                 self.rss_kb.clear();
@@ -183,7 +187,11 @@ impl Dashboard {
                 rss: "".into(),
                 tokens: "".into(),
                 decision: if c.passed {
-                    format!("CONFIRMED {:.2}x vs {}", c.speedup, ms(c.baseline_median_ns))
+                    format!(
+                        "CONFIRMED {:.2}x vs {}",
+                        c.speedup,
+                        ms(c.baseline_median_ns)
+                    )
                 } else {
                     "NOT CONFIRMED".into()
                 },
@@ -191,7 +199,9 @@ impl Dashboard {
             }),
             Event::Stop(s) => self.status = s.clone(),
             Event::Note(n) => self.status = n.clone(),
-            Event::Best(b) => self.status = format!("best: {} ({:.2}x)  {}", b.origin, b.speedup, b.reason),
+            Event::Best(b) => {
+                self.status = format!("best: {} ({:.2}x)  {}", b.origin, b.speedup, b.reason)
+            }
         }
     }
 
@@ -204,7 +214,8 @@ impl Dashboard {
         ])
         .areas(f.area());
         f.render_widget(
-            Paragraph::new(Line::from(self.title.clone())).style(Style::new().add_modifier(Modifier::BOLD)),
+            Paragraph::new(Line::from(self.title.clone()))
+                .style(Style::new().add_modifier(Modifier::BOLD)),
             head,
         );
         let [a, b, c] = Layout::horizontal([Constraint::Ratio(1, 3); 3]).areas(sparks);
@@ -216,21 +227,37 @@ impl Dashboard {
         };
         let last = |v: &[u64]| v.last().copied().unwrap_or(0);
         f.render_widget(
-            spark(format!("best median per gen ({})", ms(last(&self.best_us) * 1000)), &self.best_us, Color::Cyan),
+            spark(
+                format!("best median per gen ({})", ms(last(&self.best_us) * 1000)),
+                &self.best_us,
+                Color::Cyan,
+            ),
             a,
         );
         f.render_widget(
-            spark(format!("peak RSS ({})", mb(last(&self.rss_kb))), &self.rss_kb, Color::Magenta),
+            spark(
+                format!("peak RSS ({})", mb(last(&self.rss_kb))),
+                &self.rss_kb,
+                Color::Magenta,
+            ),
             b,
         );
         f.render_widget(
-            spark(format!("tokens per gen ({})", last(&self.tokens)), &self.tokens, Color::Yellow),
+            spark(
+                format!("tokens per gen ({})", last(&self.tokens)),
+                &self.tokens,
+                Color::Yellow,
+            ),
             c,
         );
         let visible = (table.height as usize).saturating_sub(3);
         let start = self.rows.len().saturating_sub(visible);
         let rows = self.rows[start..].iter().map(|r| {
-            let style = if r.keep { Style::new().fg(Color::Green) } else { Style::new() };
+            let style = if r.keep {
+                Style::new().fg(Color::Green)
+            } else {
+                Style::new()
+            };
             Row::new(vec![
                 r.gen.clone(),
                 r.origin.clone(),
@@ -252,10 +279,24 @@ impl Dashboard {
                 Constraint::Min(24),
             ],
         )
-        .header(Row::new(vec!["gen", "candidate", "median", "RSS", "tokens", "decision"]).style(Style::new().add_modifier(Modifier::BOLD)))
+        .header(
+            Row::new(vec![
+                "gen",
+                "candidate",
+                "median",
+                "RSS",
+                "tokens",
+                "decision",
+            ])
+            .style(Style::new().add_modifier(Modifier::BOLD)),
+        )
         .block(Block::bordered().title("candidates"));
         f.render_widget(t, table);
-        let hint = if self.done { "done, press q to exit" } else { "q to cancel" };
+        let hint = if self.done {
+            "done, press q to exit"
+        } else {
+            "q to cancel"
+        };
         f.render_widget(Paragraph::new(format!(" {}   [{hint}]", self.status)), foot);
     }
 }
@@ -287,7 +328,8 @@ pub fn run_dashboard<T: Send>(
                     if let TermEvent::Key(k) = event::read()? {
                         let quit = k.kind == KeyEventKind::Press
                             && (k.code == KeyCode::Char('q')
-                                || (k.code == KeyCode::Char('c') && k.modifiers.contains(KeyModifiers::CONTROL)));
+                                || (k.code == KeyCode::Char('c')
+                                    && k.modifiers.contains(KeyModifiers::CONTROL)));
                         if quit {
                             if dash.done {
                                 return Ok(());

@@ -38,7 +38,11 @@ fn mock_server() -> (String, Arc<Mutex<Vec<String>>>) {
                 if let Some(h) = text.find("\r\n\r\n") {
                     let len = text[..h]
                         .lines()
-                        .find_map(|l| l.to_ascii_lowercase().strip_prefix("content-length:").map(|v| v.trim().parse::<usize>().unwrap()))
+                        .find_map(|l| {
+                            l.to_ascii_lowercase()
+                                .strip_prefix("content-length:")
+                                .map(|v| v.trim().parse::<usize>().unwrap())
+                        })
                         .unwrap_or(0);
                     if buf.len() >= h + 4 + len {
                         break String::from_utf8_lossy(&buf[h + 4..h + 4 + len]).to_string();
@@ -77,11 +81,19 @@ fn violator_is_dropped_and_faster_variant_is_returned() {
     assert_eq!(cands[0].tokens, 96);
     assert_eq!(cands[0].origin, "model:qwen2.5-coder:1.5b#0");
     let notes = p.take_notes();
-    assert!(notes.iter().any(|n| n.contains("dropped by policy") && n.contains("`os`")), "{notes:?}");
+    assert!(
+        notes
+            .iter()
+            .any(|n| n.contains("dropped by policy") && n.contains("`os`")),
+        "{notes:?}"
+    );
     let req: serde_json::Value = serde_json::from_str(&bodies.lock().unwrap()[0]).unwrap();
     assert_eq!(req["model"], "qwen2.5-coder:1.5b");
     assert_eq!(req["max_tokens"], 512);
-    assert!(req["messages"][1]["content"].as_str().unwrap().contains("def bubble"));
+    assert!(req["messages"][1]["content"]
+        .as_str()
+        .unwrap()
+        .contains("def bubble"));
 }
 
 #[test]
@@ -90,11 +102,30 @@ fn violator_never_reaches_the_runner() {
     let p = HttpProposer::new(&endpoint, "qwen2.5-coder:1.5b", 512, 2);
     let runner = FakeRunner::new(400_000_000, vec![("out = sorted(data)", 2_000_000, "same")]);
     let cfg = Config::default();
-    let r = optimize("bubble.py", BUBBLE, &p, &runner, &cfg, None, &no_cancel(), &mut |_| {}).unwrap();
-    assert!(runner.seen.lock().unwrap().iter().all(|s| !s.contains("import os")));
+    let r = optimize(
+        "bubble.py",
+        BUBBLE,
+        &p,
+        &runner,
+        &cfg,
+        None,
+        &no_cancel(),
+        &mut |_| {},
+    )
+    .unwrap();
+    assert!(runner
+        .seen
+        .lock()
+        .unwrap()
+        .iter()
+        .all(|s| !s.contains("import os")));
     assert!(r.best.confirmed);
     assert!(r.best.origin.starts_with("model:"));
-    let kept = r.candidates.iter().find(|c| c.origin.starts_with("model:")).unwrap();
+    let kept = r
+        .candidates
+        .iter()
+        .find(|c| c.origin.starts_with("model:"))
+        .unwrap();
     assert_eq!(kept.tokens, 96);
     // 96 / 512 tokens costs 0.05 * 0.1875 of reward.
     let expected = kept.speedup.unwrap() - 0.15 * 1.0 - 0.05 * (96.0 / 512.0);

@@ -20,8 +20,13 @@ fn fixtures_pass_policy() {
 #[test]
 fn bubble_rule_rewrites_bubble_fixture() {
     let rw = rewrites(BUBBLE);
-    assert_eq!(rule_names(BUBBLE), ["bubble-sort:sorted", "bubble-sort:list.sort"]);
-    assert!(rw[0].source.contains("    xs[:] = sorted(xs)\n    return xs"));
+    assert_eq!(
+        rule_names(BUBBLE),
+        ["bubble-sort:sorted", "bubble-sort:list.sort"]
+    );
+    assert!(rw[0]
+        .source
+        .contains("    xs[:] = sorted(xs)\n    return xs"));
     assert!(!rw[0].source.contains("for j in range"));
     assert!(rw[1].source.contains("xs.sort()"));
 }
@@ -30,7 +35,10 @@ fn bubble_rule_rewrites_bubble_fixture() {
 fn bubble_rule_handles_descending() {
     let src = "a = [3, 1, 2]\nfor i in range(3):\n    for j in range(2):\n        if a[j] < a[j + 1]:\n            a[j], a[j + 1] = a[j + 1], a[j]\nprint(a)\n";
     let rw = rewrites(src);
-    assert_eq!(rw[0].source, "a = [3, 1, 2]\na[:] = sorted(a, reverse=True)\nprint(a)\n");
+    assert_eq!(
+        rw[0].source,
+        "a = [3, 1, 2]\na[:] = sorted(a, reverse=True)\nprint(a)\n"
+    );
 }
 
 #[test]
@@ -47,7 +55,10 @@ fn concat_rule_rewrites_concat_fixture() {
 #[test]
 fn lookup_rule_rewrites_lookup_fixture() {
     let rw = rewrites(LOOKUP);
-    assert_eq!(rule_names(LOOKUP), ["membership:set", "membership:frozenset"]);
+    assert_eq!(
+        rule_names(LOOKUP),
+        ["membership:set", "membership:frozenset"]
+    );
     let s = &rw[0].source;
     assert!(s.contains("allowed_set = set(allowed)\nfor k in range"));
     assert!(s.contains("if k in allowed_set:"));
@@ -57,8 +68,13 @@ fn lookup_rule_rewrites_lookup_fixture() {
 fn slower_edit_is_produced() {
     // The set rule fires on slower.py. The search must measure and reject it.
     let rw = rewrites(SLOWER);
-    assert_eq!(rule_names(SLOWER), ["membership:set", "membership:frozenset"]);
-    assert!(rw[0].source.contains("    small_set = set(small)\n    for v in (1, 2, 3):"));
+    assert_eq!(
+        rule_names(SLOWER),
+        ["membership:set", "membership:frozenset"]
+    );
+    assert!(rw[0]
+        .source
+        .contains("    small_set = set(small)\n    for v in (1, 2, 3):"));
 }
 
 #[test]
@@ -87,17 +103,32 @@ fn policy_rejects_escape_routes() {
     let cases: &[(&str, Violation)] = &[
         ("import os\n", Violation::BannedImport("os".into())),
         ("import sys\n", Violation::BannedImport("sys".into())),
-        ("from os.path import join\n", Violation::BannedImport("os".into())),
-        ("import urllib.request\n", Violation::BannedImport("urllib".into())),
+        (
+            "from os.path import join\n",
+            Violation::BannedImport("os".into()),
+        ),
+        (
+            "import urllib.request\n",
+            Violation::BannedImport("urllib".into()),
+        ),
         ("eval('1')\n", Violation::BannedName("eval".into())),
         ("f = exec\n", Violation::BannedName("exec".into())),
-        ("getattr(1, 'real')\n", Violation::BannedName("getattr".into())),
-        ("open('/etc/passwd')\n", Violation::BannedName("open".into())),
+        (
+            "getattr(1, 'real')\n",
+            Violation::BannedName("getattr".into()),
+        ),
+        (
+            "open('/etc/passwd')\n",
+            Violation::BannedName("open".into()),
+        ),
         (
             "().__class__.__subclasses__()\n",
             Violation::DunderAttribute("__subclasses__".into()),
         ),
-        ("x = __builtins__\n", Violation::DunderName("__builtins__".into())),
+        (
+            "x = __builtins__\n",
+            Violation::DunderName("__builtins__".into()),
+        ),
         ("from . import x\n", Violation::RelativeImport),
     ];
     for (src, want) in cases {

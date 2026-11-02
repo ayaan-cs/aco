@@ -99,7 +99,10 @@ fn odd(s: &str) -> Result<usize, String> {
 
 fn write_outputs(args: &Args, path: &Path, report: &Report) -> std::io::Result<Vec<PathBuf>> {
     std::fs::create_dir_all(&args.out)?;
-    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("candidate");
+    let stem = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("candidate");
     let best = args.out.join(format!("{stem}.best.py"));
     std::fs::write(&best, &report.best_source)?;
     let mut written = vec![best];
@@ -196,7 +199,12 @@ fn main() -> ExitCode {
     };
     let samples = args.pop.saturating_sub(1).max(1);
     let model = || -> Box<dyn Proposer> {
-        Box::new(HttpProposer::new(&args.endpoint, &args.model, args.token_budget, samples))
+        Box::new(HttpProposer::new(
+            &args.endpoint,
+            &args.model,
+            args.token_budget,
+            samples,
+        ))
     };
     let proposer: Box<dyn Proposer> = match args.proposer {
         ProposerKind::Rules => Box::new(RuleProposer),
@@ -212,10 +220,26 @@ fn main() -> ExitCode {
             let _ = writeln!(out, "{}", plain_line(&e));
             let _ = out.flush();
         };
-        run_all(&args, &inputs, check.as_deref(), proposer.as_ref(), runner.as_ref(), &cancel, &mut emit)
+        run_all(
+            &args,
+            &inputs,
+            check.as_deref(),
+            proposer.as_ref(),
+            runner.as_ref(),
+            &cancel,
+            &mut emit,
+        )
     } else {
         match run_dashboard(&cancel, |emit| {
-            run_all(&args, &inputs, check.as_deref(), proposer.as_ref(), runner.as_ref(), &cancel, emit)
+            run_all(
+                &args,
+                &inputs,
+                check.as_deref(),
+                proposer.as_ref(),
+                runner.as_ref(),
+                &cancel,
+                emit,
+            )
         }) {
             Ok(e) => e,
             Err(e) => vec![format!("terminal error: {e}")],

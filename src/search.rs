@@ -226,7 +226,10 @@ pub fn optimize(
         let why = if baseline.timed_out {
             "timed out".to_string()
         } else {
-            baseline.error.clone().unwrap_or_else(|| "no timings".into())
+            baseline
+                .error
+                .clone()
+                .unwrap_or_else(|| "no timings".into())
         };
         return Err(format!("{file}: baseline failed in the sandbox: {why}"));
     }

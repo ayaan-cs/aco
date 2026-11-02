@@ -85,7 +85,8 @@ fn find_tool(name: &str) -> Option<PathBuf> {
 
 impl UnshareRunner {
     pub fn new(limits: Limits) -> Result<Self, String> {
-        let unshare_bin = find_tool("unshare").ok_or("the `unshare` binary (util-linux) was not found")?;
+        let unshare_bin =
+            find_tool("unshare").ok_or("the `unshare` binary (util-linux) was not found")?;
         let python = ["/usr/bin/python3", "/usr/local/bin/python3"]
             .iter()
             .map(PathBuf::from)
@@ -101,18 +102,27 @@ impl UnshareRunner {
     /// Check that namespaces can be created and the setup tools exist.
     pub fn probe(&self) -> Result<(), String> {
         let mut cmd = Command::new(&self.unshare_bin);
-        cmd.args(NS_FLAGS).arg("true").env_clear().env("PATH", SETUP_PATH);
+        cmd.args(NS_FLAGS)
+            .arg("true")
+            .env_clear()
+            .env("PATH", SETUP_PATH);
         let c = run_captured(cmd, Duration::from_secs(10), 64 << 10, &|| {})
             .map_err(|e| userns_unavailable(&format!("could not start unshare: {e}")))?;
         let ok = c.status.map(|s| s.success()).unwrap_or(false);
         if !ok {
             let msg = String::from_utf8_lossy(&c.stderr).trim().to_string();
-            let msg = if msg.is_empty() { "unshare exited with an error".to_string() } else { msg };
+            let msg = if msg.is_empty() {
+                "unshare exited with an error".to_string()
+            } else {
+                msg
+            };
             return Err(userns_unavailable(&msg));
         }
         for tool in ["setpriv", "prlimit", "pivot_root", "mount", "umount"] {
             if find_tool(tool).is_none() {
-                return Err(format!("`{tool}` (util-linux) is required by the unshare sandbox"));
+                return Err(format!(
+                    "`{tool}` (util-linux) is required by the unshare sandbox"
+                ));
             }
         }
         Ok(())

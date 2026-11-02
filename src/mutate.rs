@@ -228,15 +228,21 @@ fn bubble_at(src: &str, stmt: &Stmt) -> Option<Vec<Rewrite>> {
     if !outer.orelse.is_empty() || outer.body.len() != 1 {
         return None;
     }
-    let Stmt::For(inner) = &outer.body[0] else { return None };
+    let Stmt::For(inner) = &outer.body[0] else {
+        return None;
+    };
     if !inner.orelse.is_empty() || inner.body.len() != 1 {
         return None;
     }
-    let Stmt::If(cond) = &inner.body[0] else { return None };
+    let Stmt::If(cond) = &inner.body[0] else {
+        return None;
+    };
     if !cond.orelse.is_empty() || cond.body.len() != 1 {
         return None;
     }
-    let Expr::Compare(cmp) = cond.test.as_ref() else { return None };
+    let Expr::Compare(cmp) = cond.test.as_ref() else {
+        return None;
+    };
     if cmp.ops.len() != 1 || cmp.comparators.len() != 1 {
         return None;
     }
@@ -250,7 +256,9 @@ fn bubble_at(src: &str, stmt: &Stmt) -> Option<Vec<Rewrite>> {
     if xa != xb || ia == ib {
         return None;
     }
-    let Stmt::Assign(swap) = &cond.body[0] else { return None };
+    let Stmt::Assign(swap) = &cond.body[0] else {
+        return None;
+    };
     if swap.targets.len() != 1 {
         return None;
     }
@@ -260,8 +268,16 @@ fn bubble_at(src: &str, stmt: &Stmt) -> Option<Vec<Rewrite>> {
     if t.elts.len() != 2 || v.elts.len() != 2 {
         return None;
     }
-    let ts: Vec<_> = t.elts.iter().map(|e| subscript(src, e)).collect::<Option<_>>()?;
-    let vs: Vec<_> = v.elts.iter().map(|e| subscript(src, e)).collect::<Option<_>>()?;
+    let ts: Vec<_> = t
+        .elts
+        .iter()
+        .map(|e| subscript(src, e))
+        .collect::<Option<_>>()?;
+    let vs: Vec<_> = v
+        .elts
+        .iter()
+        .map(|e| subscript(src, e))
+        .collect::<Option<_>>()?;
     let a = (xa.clone(), ia);
     let b = (xa.clone(), ib);
     if ts != [a.clone(), b.clone()] || vs != [b, a] {
@@ -287,7 +303,9 @@ fn bubble_at(src: &str, stmt: &Stmt) -> Option<Vec<Rewrite>> {
 fn concat_join(src: &str, body: &[Stmt], used: &HashSet<String>) -> Vec<Rewrite> {
     for block in all_blocks(body) {
         for (k, stmt) in block.iter().enumerate() {
-            let Some((s_name, value)) = single_name_target(stmt) else { continue };
+            let Some((s_name, value)) = single_name_target(stmt) else {
+                continue;
+            };
             let is_empty_str = matches!(
                 value,
                 Expr::Constant(c) if matches!(&c.value, ast::Constant::Str(s) if s.is_empty())
@@ -334,7 +352,9 @@ fn concat_join(src: &str, body: &[Stmt], used: &HashSet<String>) -> Vec<Rewrite>
 fn set_membership(src: &str, body: &[Stmt], used: &HashSet<String>) -> Vec<Rewrite> {
     for block in all_blocks(body) {
         for (k, stmt) in block.iter().enumerate() {
-            let Some((l_name, value)) = single_name_target(stmt) else { continue };
+            let Some((l_name, value)) = single_name_target(stmt) else {
+                continue;
+            };
             let is_list = match value {
                 Expr::List(_) | Expr::ListComp(_) => true,
                 Expr::Call(c) => name_of(&c.func).as_deref() == Some("list"),
@@ -368,7 +388,8 @@ fn set_membership(src: &str, body: &[Stmt], used: &HashSet<String>) -> Vec<Rewri
                 let (ls, _) = span(lp.range());
                 let indent = indent_at(src, ls);
                 let build = |ctor: &str| {
-                    let mut edits = vec![(ls, ls, format!("{set_name} = {ctor}({l_name})\n{indent}"))];
+                    let mut edits =
+                        vec![(ls, ls, format!("{set_name} = {ctor}({l_name})\n{indent}"))];
                     for r in &tests {
                         let (s, e) = span(*r);
                         edits.push((s, e, set_name.clone()));

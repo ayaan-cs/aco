@@ -42,7 +42,8 @@ impl DockerRunner {
     fn quick(&self, args: &[&str], timeout: Duration) -> Result<(), String> {
         let mut cmd = Command::new(&self.bin);
         cmd.args(args);
-        let c = run_captured(cmd, timeout, 64 << 10, &|| {}).map_err(|e| format!("`docker` could not be started: {e}"))?;
+        let c = run_captured(cmd, timeout, 64 << 10, &|| {})
+            .map_err(|e| format!("`docker` could not be started: {e}"))?;
         if c.timed_out {
             return Err(format!("`docker {}` timed out", args.join(" ")));
         }
@@ -55,9 +56,15 @@ impl DockerRunner {
 
     /// The daemon answers and the pinned image is present (pulled if needed).
     pub fn probe(&self) -> Result<(), String> {
-        self.quick(&["version", "--format", "{{.Server.Version}}"], Duration::from_secs(10))
-            .map_err(|e| format!("docker daemon unavailable: {e}"))?;
-        if self.quick(&["image", "inspect", &self.image], Duration::from_secs(20)).is_err() {
+        self.quick(
+            &["version", "--format", "{{.Server.Version}}"],
+            Duration::from_secs(10),
+        )
+        .map_err(|e| format!("docker daemon unavailable: {e}"))?;
+        if self
+            .quick(&["image", "inspect", &self.image], Duration::from_secs(20))
+            .is_err()
+        {
             self.quick(&["pull", &self.image], Duration::from_secs(900))
                 .map_err(|e| format!("could not pull {}: {e}", self.image))?;
         }

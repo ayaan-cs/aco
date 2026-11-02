@@ -52,7 +52,11 @@ pub struct Combined(pub Vec<Box<dyn Proposer>>);
 
 impl Proposer for Combined {
     fn name(&self) -> String {
-        self.0.iter().map(|p| p.name()).collect::<Vec<_>>().join("+")
+        self.0
+            .iter()
+            .map(|p| p.name())
+            .collect::<Vec<_>>()
+            .join("+")
     }
 
     fn propose(&self, source: &str) -> Vec<Candidate> {

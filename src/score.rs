@@ -136,7 +136,10 @@ mod tests {
         let mut t = out(10, "a");
         t.timed_out = true;
         assert_eq!(judge(100, &o, &t, 0.05), Decision::RejectTimeout);
-        assert_eq!(judge(100, &o, &Outcome::failed("boom"), 0.05), Decision::RejectError);
+        assert_eq!(
+            judge(100, &o, &Outcome::failed("boom"), 0.05),
+            Decision::RejectError
+        );
     }
 
     #[test]

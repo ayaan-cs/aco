@@ -69,7 +69,10 @@ impl HttpProposer {
             .timeout_global(Some(self.timeout))
             .build()
             .into();
-        let mut resp = agent.post(&url).send_json(&body).map_err(|e| e.to_string())?;
+        let mut resp = agent
+            .post(&url)
+            .send_json(&body)
+            .map_err(|e| e.to_string())?;
         let v: Value = resp.body_mut().read_json().map_err(|e| e.to_string())?;
         let content = v["choices"][0]["message"]["content"]
             .as_str()
@@ -136,7 +139,10 @@ impl Proposer for HttpProposer {
     }
 
     fn take_notes(&self) -> Vec<String> {
-        self.notes.lock().map(|mut n| std::mem::take(&mut *n)).unwrap_or_default()
+        self.notes
+            .lock()
+            .map(|mut n| std::mem::take(&mut *n))
+            .unwrap_or_default()
     }
 }
 
@@ -146,7 +152,10 @@ mod tests {
 
     #[test]
     fn extracts_fenced_code() {
-        assert_eq!(extract_code("Sure:\n```python\nprint(1)\n```\nDone."), "print(1)\n");
+        assert_eq!(
+            extract_code("Sure:\n```python\nprint(1)\n```\nDone."),
+            "print(1)\n"
+        );
         assert_eq!(extract_code("print(2)"), "print(2)\n");
     }
 
