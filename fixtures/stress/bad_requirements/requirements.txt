@@ -1,0 +1,2 @@
+numpy==2.3.4
+-e git+https://example.com/repo.git#egg=thing

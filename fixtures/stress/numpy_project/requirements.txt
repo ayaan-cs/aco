@@ -1,0 +1,3 @@
+# numpy has a compiled extension; more-itertools is pure Python.
+numpy==2.3.4
+more-itertools==10.5.0
