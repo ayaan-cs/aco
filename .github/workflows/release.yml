@@ -1,10 +1,13 @@
 name: release
 
-# Tags v* build, smoke-test and publish. A manual run (workflow_dispatch) does
-# everything except publishing, to check the build before tagging.
+# Tags v* build, smoke-test and publish. A manual run (workflow_dispatch), or a
+# push to main that changes this workflow, does everything except publishing,
+# to check the build before tagging.
 on:
   push:
     tags: ["v*"]
+    branches: [main]
+    paths: [".github/workflows/release.yml"]
   workflow_dispatch:
 
 permissions:
