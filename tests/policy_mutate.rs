@@ -274,12 +274,22 @@ fn several_sites_give_combined_and_single_rewrites() {
     );
     let all = &rewrites(src)[0].source;
     assert!(all.contains("known_set = set(known)") && all.contains("other_set = set(other)"));
-    // A large file with many sites stays fast to analyse.
-    let big: String = (0..400)
-        .map(|k| format!("def f{k}(ids):\n    known = [1, 2, 3]\n    n = ''\n    for x in ids:\n        if x in known:\n            n += 'a'\n    return n\n\n\n"))
-        .collect();
+    // A large file with many sites stays fast to analyse: the cost grows about
+    // linearly with the number of sites (a ratio, so it holds on slow CI
+    // machines and in debug builds; quadratic growth would be ~16x).
+    let big = |n: usize| -> String {
+        (0..n)
+            .map(|k| format!("def f{k}(ids):\n    known = [1, 2, 3]\n    n = ''\n    for x in ids:\n        if x in known:\n            n += 'a'\n    return n\n\n\n"))
+            .collect()
+    };
+    let small_src = big(100);
     let t = std::time::Instant::now();
-    let rw = rewrites(&big);
+    rewrites(&small_src);
+    let t100 = t.elapsed();
+    let big_src = big(400);
+    let t = std::time::Instant::now();
+    let rw = rewrites(&big_src);
+    let t400 = t.elapsed();
     // set ×400, frozenset ×400, join ×400, then 6 singles of each variant.
     assert_eq!(
         rw.len(),
@@ -289,5 +299,8 @@ fn several_sites_give_combined_and_single_rewrites() {
     );
     let all = rw.iter().find(|r| r.rule == "membership:set ×400").unwrap();
     assert_eq!(all.source.matches(" = set(known)\n").count(), 400);
-    assert!(t.elapsed().as_secs_f64() < 5.0, "{:?}", t.elapsed());
+    assert!(
+        t400.as_secs_f64() < 8.0 * t100.as_secs_f64(),
+        "100 sites {t100:?}, 400 sites {t400:?}"
+    );
 }

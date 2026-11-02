@@ -517,7 +517,23 @@ fn host_python_parses(path: &Path) -> bool {
 /// Resolve the project, check every local file, install requirements, and
 /// build the sandbox context for one input. Prints diagnostics and returns
 /// `None` on bad input.
-fn prepare(d: &Diag, args: &Args, backend: &dyn Backend, path: &Path) -> Option<Prepared> {
+/// Everything about an input that can be checked without a sandbox.
+struct Checked {
+    path: PathBuf,
+    proj: Project,
+    mutated: PathBuf,
+    source: Source,
+    project_ns: u64,
+    parse_ns: u64,
+    policy_ns: u64,
+    notes: Vec<String>,
+    reqs: Option<aco::deps::Requirements>,
+}
+
+/// Read, parse, analyse and policy-check one input, and parse its
+/// requirements. Input errors (exit 2) are found here, before a sandbox is
+/// needed, so they are reported even on a machine without one.
+fn check_input(d: &Diag, args: &Args, path: &Path) -> Option<Checked> {
     let shown = path.display().to_string();
     let target_src = load(d, path)?;
     let t0 = std::time::Instant::now();
@@ -561,9 +577,8 @@ fn prepare(d: &Diag, args: &Args, backend: &dyn Backend, path: &Path) -> Option<
     }
     let policy_ns = t2.elapsed().as_nanos() as u64;
 
-    let mut notes = proj.notes.clone();
+    let notes = proj.notes.clone();
     // Third-party requirements.
-    let t2 = std::time::Instant::now();
     let reqs = if args.no_requirements {
         None
     } else {
@@ -575,6 +590,71 @@ fn prepare(d: &Diag, args: &Args, backend: &dyn Backend, path: &Path) -> Option<
             }
         }
     };
+    let mut notes = notes;
+    if !reqs.as_ref().is_some_and(|r| !r.specs.is_empty()) {
+        // Nothing to install, so every third-party import can be checked now.
+        check_imports(
+            d,
+            args,
+            &proj,
+            &Default::default(),
+            reqs.as_ref(),
+            &mut notes,
+        )?;
+    }
+    Some(Checked {
+        path: path.to_path_buf(),
+        proj,
+        mutated,
+        source,
+        project_ns,
+        parse_ns,
+        policy_ns,
+        notes,
+        reqs,
+    })
+}
+
+/// Imports that are neither standard library, local nor installed are errors.
+fn check_imports(
+    d: &Diag,
+    args: &Args,
+    proj: &Project,
+    installed: &std::collections::BTreeSet<String>,
+    reqs: Option<&aco::deps::Requirements>,
+    notes: &mut Vec<String>,
+) -> Option<()> {
+    match proj.check_external(installed, reqs.map(|r| r.source.as_str())) {
+        Ok(n) => {
+            notes.extend(n);
+            Some(())
+        }
+        Err(e) => {
+            d.error(e);
+            if args.no_requirements {
+                d.hint("--no-requirements is set, so nothing was installed");
+            }
+            None
+        }
+    }
+}
+
+/// Install requirements into the sandbox, check imports against them, and
+/// snapshot the project: the steps that need the chosen sandbox.
+fn prepare(d: &Diag, args: &Args, backend: &dyn Backend, c: Checked) -> Option<Prepared> {
+    let Checked {
+        path,
+        proj,
+        mutated,
+        source,
+        project_ns,
+        parse_ns,
+        policy_ns,
+        mut notes,
+        reqs,
+    } = c;
+    let path = path.as_path();
+    let t2 = std::time::Instant::now();
     let mut deps = DepsEnv::default();
     let mut packages = Vec::new();
     let mut installed_tops = std::collections::BTreeSet::new();
@@ -631,15 +711,9 @@ fn prepare(d: &Diag, args: &Args, backend: &dyn Backend, path: &Path) -> Option<
     } else {
         0
     };
-    match proj.check_external(&installed_tops, reqs.as_ref().map(|r| r.source.as_str())) {
-        Ok(n) => notes.extend(n),
-        Err(e) => {
-            d.error(e);
-            if args.no_requirements {
-                d.hint("--no-requirements is set, so nothing was installed");
-            }
-            return None;
-        }
+    // Without requirements this already ran in check_input.
+    if reqs.as_ref().is_some_and(|r| !r.specs.is_empty()) {
+        check_imports(d, args, &proj, &installed_tops, reqs.as_ref(), &mut notes)?;
     }
 
     // Is the hot code somewhere aco is not rewriting?
@@ -778,6 +852,13 @@ fn main() -> ExitCode {
         warmup: args.warmup,
         ..Limits::default()
     };
+    let mut checked = Vec::new();
+    for f in &args.files {
+        match check_input(&d, &args, f) {
+            Some(c) => checked.push(c),
+            None => return ExitCode::from(2),
+        }
+    }
     let backend = match select(args.sandbox, limits) {
         Ok(r) => r,
         Err(e) => {
@@ -790,8 +871,8 @@ fn main() -> ExitCode {
         }
     };
     let mut inputs = Vec::new();
-    for f in &args.files {
-        match prepare(&d, &args, backend.as_ref(), f) {
+    for c in checked {
+        match prepare(&d, &args, backend.as_ref(), c) {
             Some(p) => inputs.push(p),
             None => return ExitCode::from(2),
         }
