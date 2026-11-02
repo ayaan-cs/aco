@@ -14,8 +14,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
-      - name: cargo test
-        run: cargo test --locked
+          components: clippy, rustfmt
+      - name: cargo fmt
+        run: cargo fmt --check
       - name: cargo clippy
         run: cargo clippy --locked --all-targets -- -D warnings
+      # --nocapture so the log shows which sandbox suites ran and which skipped.
+      - name: cargo test
+        run: cargo test --locked -- --nocapture
+      - name: sandbox availability
+        run: |
+          docker version --format 'docker server {{.Server.Version}}' || echo "docker: unavailable"
+          sysctl kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true
+      - name: end-to-end (docker sandbox)
+        run: cargo run --locked -- --plain --sandbox docker --reps 3 --out ci-out --json fixtures/lookup.py fixtures/slower.py
