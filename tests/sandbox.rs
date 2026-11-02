@@ -221,7 +221,16 @@ fn disabled_userns_fails_closed_with_named_settings() {
         python: "/usr/bin/python3".into(),
         limits: limits(),
     };
-    let err = r.probe().unwrap_err();
+    // Exec of a just-written script can fail with ETXTBSY while another test
+    // thread's fork still holds the write descriptor; retry that case only.
+    let mut err = r.probe().unwrap_err();
+    for _ in 0..20 {
+        if !err.contains("Text file busy") {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        err = r.probe().unwrap_err();
+    }
     assert!(err.contains("Operation not permitted"), "{err}");
     assert!(err.contains("kernel.unprivileged_userns_clone"), "{err}");
     assert!(
