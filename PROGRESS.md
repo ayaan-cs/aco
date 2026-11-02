@@ -28,3 +28,17 @@
 - UX: grouped `--help` with examples and exit codes; located diagnostics for missing/empty/binary/unparsable/policy-violating files and for no sandbox; coloured, aligned `--plain` honouring NO_COLOR/--color/TTY; dashboard with header, progress gauge, sparklines, candidate table, summary panel and winner diff, scroll, too-small notice; signal-safe cancel that kills in-flight sandboxes; summary left in scrollback.
 - Verification: scripts/verify.py drives the release binary (dashboard in a pty via pyte); results in release-run/VERIFY.md and release-run/verify/results.json.
 - Demo: release-run/demo.mp4 (vhs, 1600x960), tape release-run/demo.tape, stills release-run/still-*.png.
+
+## Stress/multi-file pass (checklist)
+- [x] Project mode: import closure, read-only /proj snapshot, `--project-root`, `--mutate`, relative imports, policy on every local file (file:line)
+- [x] Third-party packages: `--requirements` / auto-detect, wheels only, cached (host site-packages for unshare, derived image for Docker), clear errors
+- [x] Semantics: stdout+stderr+exit code oracle, seeded confirmation (PYTHONHASHSEED 1..N) with paired wins, unsound mutate rules fixed, policy visitor holes closed
+- [x] Inputs: `--stdin`, args after `--`, `sys` subset, encodings (BOM/CRLF/tabs kept, non-UTF-8 refused), too-fast floor (1 ms)
+- [x] Stress fixtures (scripts/gen_stress.py) and tests/stress.rs
+- [x] TUI hang-up bug: closing the terminal left aco spinning at 100% CPU (crossterm EOF loop); fixed + tests/hangup.rs
+- [ ] Real local model run (llama.cpp + Qwen2.5-Coder-1.5B)
+- [ ] CI: Docker end-to-end for numpy_project and project --mutate; gen_stress reproducibility
+- [ ] verify.py / VERIFY.md rows; bench.md and transcript.txt refresh
+- [ ] README, SECURITY.md
+- [ ] Re-record demo (header changed)
+- [ ] Push, green CI

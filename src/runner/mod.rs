@@ -11,6 +11,12 @@ pub struct Outcome {
     pub stdout_truncated: bool,
     /// SHA-256 of the full stdout, computed inside the sandbox.
     pub stdout_sha256: String,
+    /// Captured stderr (Python-level writes, warnings) of the first timed rep.
+    pub stderr: String,
+    /// SHA-256 of the full stderr.
+    pub stderr_sha256: String,
+    /// Exit status: 0, or the code of a `SystemExit` the script raised.
+    pub exit_code: i64,
     /// Per-rep wall times in nanoseconds, measured inside the sandbox.
     pub times_ns: Vec<u64>,
     /// Median of `times_ns`.
@@ -40,6 +46,93 @@ impl Outcome {
 pub trait Runner: Send + Sync {
     fn name(&self) -> &'static str;
     fn run(&self, source: &str, reps: usize) -> Outcome;
+    /// Like [`Runner::run`] with `PYTHONHASHSEED` fixed to `seed`. Runners
+    /// that cannot vary it ignore the seed.
+    fn run_seeded(&self, source: &str, reps: usize, seed: u32) -> Outcome {
+        let _ = seed;
+        self.run(source, reps)
+    }
+}
+
+/// Installed third-party requirements, as each backend sees them.
+#[derive(Clone, Debug, Default)]
+pub struct DepsEnv {
+    /// Host directory with the installed packages (unshare mounts it at /deps).
+    pub host_dir: Option<PathBuf>,
+    /// Derived Docker image with the packages under /opt/aco-deps.
+    pub docker_image: Option<String>,
+}
+
+/// Where and how a candidate runs.
+#[derive(Clone, Debug, Default)]
+pub struct RunCtx {
+    /// Snapshot directory of the project's local modules, mounted read-only
+    /// at /proj. `None` runs the candidate on its own.
+    pub project: Option<PathBuf>,
+    /// The entry point, relative to the project root.
+    pub target: String,
+    /// The file the candidate replaces, relative to the project root.
+    pub mutated: String,
+    /// `sys.argv[1:]` for the script.
+    pub argv: Vec<String>,
+    /// Text the script reads from stdin (empty if `None`).
+    pub stdin: Option<String>,
+    pub deps: DepsEnv,
+}
+
+/// A sandbox implementation. Wrap it in [`Bound`] to get a [`Runner`].
+pub trait Backend: Send + Sync {
+    fn name(&self) -> &'static str;
+    fn exec(&self, ctx: &RunCtx, source: &str, reps: usize, seed: u32) -> Outcome;
+    /// Install `reqs` (already sanitised) for this backend, cached. Network is
+    /// used here, never during a timed run.
+    fn prepare_deps(
+        &self,
+        reqs: &crate::deps::Requirements,
+    ) -> Result<crate::deps::Installed, String>;
+}
+
+/// A backend plus the context for one input file.
+pub struct Bound<'a> {
+    pub backend: &'a dyn Backend,
+    pub ctx: RunCtx,
+}
+
+impl<'a> Bound<'a> {
+    /// Run candidates as standalone files.
+    pub fn single(backend: &'a dyn Backend) -> Self {
+        Bound {
+            backend,
+            ctx: RunCtx::default(),
+        }
+    }
+}
+
+impl Runner for Bound<'_> {
+    fn name(&self) -> &'static str {
+        self.backend.name()
+    }
+    fn run(&self, source: &str, reps: usize) -> Outcome {
+        self.backend.exec(&self.ctx, source, reps, 0)
+    }
+    fn run_seeded(&self, source: &str, reps: usize, seed: u32) -> Outcome {
+        self.backend.exec(&self.ctx, source, reps, seed)
+    }
+}
+
+/// Environment for every sandboxed Python: hash seed fixed per run, and
+/// numeric libraries kept to one thread so timings are comparable.
+pub(crate) fn sandbox_env(seed: u32) -> Vec<(String, String)> {
+    let mut v = vec![("PYTHONHASHSEED".to_string(), seed.to_string())];
+    for k in [
+        "OMP_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "NUMEXPR_NUM_THREADS",
+    ] {
+        v.push((k.to_string(), "1".to_string()));
+    }
+    v
 }
 
 pub mod docker;
@@ -108,7 +201,7 @@ pub enum SandboxKind {
 }
 
 /// Pick a sandbox. Fails closed: never falls back to running unsandboxed.
-pub fn select(kind: SandboxKind, limits: Limits) -> Result<Box<dyn Runner>, String> {
+pub fn select(kind: SandboxKind, limits: Limits) -> Result<Box<dyn Backend>, String> {
     match kind {
         SandboxKind::Docker => {
             let d = DockerRunner::new(limits);
@@ -156,6 +249,11 @@ pub fn aborted() -> bool {
 
 // ------------------------------------------------------------ internals
 
+/// A random hex string for unique scratch names.
+pub fn nonce_public() -> String {
+    nonce()
+}
+
 pub(crate) fn nonce() -> String {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let mut h = RandomState::new().build_hasher();
@@ -170,20 +268,69 @@ pub(crate) fn nonce() -> String {
     format!("{:016x}", h.finish())
 }
 
-/// A private scratch directory holding `files/harness.py`, `files/candidate.py`
-/// and an empty `root/` mount point. Removed on drop.
+/// A private scratch directory holding `files/harness.py`,
+/// `files/candidate.py`, `files/run.json` and an empty `root/` mount point.
+/// Removed on drop.
 pub(crate) struct WorkDir {
     pub dir: PathBuf,
 }
 
+/// Inside the sandbox: harness and run file at /work, project at /proj.
+pub(crate) const WORK: &str = "/work";
+pub(crate) const PROJ: &str = "/proj";
+
 impl WorkDir {
-    pub fn new(source: &str) -> std::io::Result<Self> {
-        let dir = std::env::temp_dir().join(format!("aco-{}-{}", std::process::id(), nonce()));
+    pub fn new(
+        source: &str,
+        ctx: &RunCtx,
+        reps: usize,
+        warmup: usize,
+        nonce: &str,
+        deps_mount: Option<&str>,
+    ) -> std::io::Result<Self> {
+        let dir =
+            std::env::temp_dir().join(format!("aco-{}-{}", std::process::id(), self::nonce()));
         std::fs::create_dir_all(dir.join("files"))?;
         std::fs::create_dir_all(dir.join("root"))?;
         std::fs::write(dir.join("files/harness.py"), HARNESS)?;
         std::fs::write(dir.join("files/candidate.py"), source)?;
+        let target = if ctx.project.is_some() {
+            format!("{PROJ}/{}", ctx.target)
+        } else {
+            format!("{PROJ}/candidate.py")
+        };
+        let run = serde_json::json!({
+            "target": target,
+            "proj": PROJ,
+            "reps": reps,
+            "warmup": warmup,
+            "nonce": nonce,
+            "argv": ctx.argv,
+            "stdin": ctx.stdin,
+            "deps": deps_mount,
+        });
+        std::fs::write(dir.join("files/run.json"), run.to_string())?;
+        // Readable by the sandbox user (Docker runs as nobody).
+        use std::os::unix::fs::PermissionsExt;
+        for f in [
+            "files",
+            "files/harness.py",
+            "files/candidate.py",
+            "files/run.json",
+        ] {
+            let mode = if f == "files" { 0o755 } else { 0o644 };
+            std::fs::set_permissions(dir.join(f), std::fs::Permissions::from_mode(mode))?;
+        }
         Ok(WorkDir { dir })
+    }
+    /// The project directory to mount at /proj: the snapshot, or the work
+    /// files themselves for a standalone candidate.
+    pub fn project(&self, ctx: &RunCtx) -> PathBuf {
+        ctx.project.clone().unwrap_or_else(|| self.files())
+    }
+    /// The project-relative path the candidate is mounted over, if any.
+    pub fn overlay<'c>(&self, ctx: &'c RunCtx) -> Option<&'c str> {
+        ctx.project.as_ref().map(|_| ctx.mutated.as_str())
     }
     pub fn files(&self) -> PathBuf {
         self.dir.join("files")
@@ -286,6 +433,12 @@ struct HarnessResult {
     stdout: String,
     stdout_truncated: bool,
     stdout_sha256: String,
+    #[serde(default)]
+    stderr: String,
+    #[serde(default)]
+    stderr_sha256: String,
+    #[serde(default)]
+    exit_code: i64,
     maxrss_kb: u64,
     cgroup_peak_bytes: Option<u64>,
 }
@@ -330,6 +483,9 @@ pub(crate) fn parse_outcome(c: &Captured, nonce: &str) -> Outcome {
         stdout: r.stdout,
         stdout_truncated: r.stdout_truncated,
         stdout_sha256: r.stdout_sha256,
+        stderr: r.stderr,
+        stderr_sha256: r.stderr_sha256,
+        exit_code: r.exit_code,
         median_ns,
         times_ns: r.times_ns,
         peak_rss_kb: r.cgroup_peak_bytes.map(|b| b / 1024).unwrap_or(r.maxrss_kb),

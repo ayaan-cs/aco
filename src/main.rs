@@ -8,10 +8,14 @@ use std::time::Duration;
 use clap::builder::styling::{AnsiColor, Effects, Styles};
 use clap::{CommandFactory, FromArgMatches, Parser, ValueEnum};
 
+use aco::project::{self, Project, Snapshot};
 use aco::propose::http::{HttpProposer, DEFAULT_ENDPOINT, DEFAULT_MODEL};
 use aco::propose::{Combined, Proposer, RuleProposer};
-use aco::runner::{abort_all, select, Limits, Runner, SandboxKind};
-use aco::search::{optimize, Config, Event, Report, Summary};
+use aco::runner::{abort_all, select, Backend, Bound, DepsEnv, Limits, RunCtx, SandboxKind};
+use aco::search::{
+    optimize, Config, Event, FileInfo, PackageInfo, Report, RunInfo, Summary, Timings,
+};
+use aco::source::Source;
 use aco::tui::{run_dashboard, Exit};
 use aco::ui::{self, ColorChoice, Paint, Plain};
 
@@ -42,10 +46,15 @@ const EXAMPLES: &str = "\
   aco --check expected.txt slow.py     Require stdout to equal a file, byte for byte
   aco --proposer both slow.py          Rules plus a local model served by Ollama
   aco --gens 5 --patience 2 slow.py    Search longer before giving up
+  aco app/main.py                      Imports of local modules are found and copied in
+  aco --mutate app/util.py app/main.py Run main.py, rewrite the helper it imports
+  aco --requirements req.txt fit.py    Install third-party wheels first (cached)
+  aco --stdin input.txt solve.py -- 3  Feed a file to stdin, pass args to the script
 
 \x1b[1;32mOutputs:\x1b[0m
-  <out>/<name>.best.py is the fastest confirmed version, or a copy of the original
-  if nothing beat it. With --json, <out>/<name>.report.json has every measurement.
+  <out>/<name>.best.py is the fastest confirmed version of the rewritten file, or a
+  copy of the original if nothing beat it. With --json, <out>/<name>.report.json has
+  every measurement, the local files used and the installed packages.
 
 \x1b[1;32mExit status:\x1b[0m
   0 done · 1 a file failed in the sandbox · 2 bad input or usage · 3 no sandbox · 130 cancelled";
@@ -62,15 +71,19 @@ fn examples() -> String {
 /// Find a faster version of a Python script by measuring real sandboxed runs.
 ///
 /// aco proposes rewrites, runs every candidate in an isolated sandbox (Docker,
-/// or Linux namespaces), and keeps one only if its stdout is identical and its
-/// median time is at least --margin faster. The winner is then re-run against
-/// the original, interleaved, and reported only if it holds up.
+/// or Linux namespaces), and keeps one only if its stdout, stderr and exit code
+/// are identical and its median time is at least --margin faster. The winner is
+/// then re-run against the original, interleaved under several hash seeds, and
+/// reported only if it holds up.
 #[derive(Parser, Debug)]
 #[command(name = "aco", version, styles = STYLES, max_term_width = 100)]
 struct Args {
-    /// Python files to optimise
+    /// Python files to optimise (each is run as a script)
     #[arg(required = true, value_name = "FILE")]
     files: Vec<PathBuf>,
+    /// Arguments passed to the script as sys.argv[1:]
+    #[arg(last = true, value_name = "ARGS")]
+    script_args: Vec<String>,
 
     /// Maximum generations
     #[arg(long, default_value_t = 3, value_parser = at_least_1, help_heading = "Search")]
@@ -124,6 +137,23 @@ struct Args {
     /// Memory limit per sandbox run, in MiB
     #[arg(long, default_value_t = 1024, value_name = "MIB", value_parser = mib, help_heading = "Sandbox")]
     memory_mb: u64,
+
+    /// Root for resolving local imports [default: the script's directory]
+    #[arg(long, value_name = "DIR", help_heading = "Project")]
+    project_root: Option<PathBuf>,
+    /// Rewrite this imported local file instead of the script (one input only)
+    #[arg(long, value_name = "FILE", help_heading = "Project")]
+    mutate: Option<PathBuf>,
+    /// Requirements to install as wheels before running [default: requirements.txt or
+    /// pyproject.toml [project] dependencies in the project root]
+    #[arg(long, value_name = "FILE", help_heading = "Project")]
+    requirements: Option<PathBuf>,
+    /// Do not look for or install requirements
+    #[arg(long, conflicts_with = "requirements", help_heading = "Project")]
+    no_requirements: bool,
+    /// File whose contents the script reads on stdin [default: empty]
+    #[arg(long, value_name = "FILE", help_heading = "Project")]
+    stdin: Option<PathBuf>,
 
     /// Directory for <name>.best.py and the report
     #[arg(
@@ -213,26 +243,69 @@ struct Diag {
     p: Paint,
 }
 
+/// Write a line to stderr, ignoring failure: `eprintln!` panics when stderr is
+/// gone (for example a closed terminal window), which would turn a clean exit
+/// into an abort.
+fn err_line(line: std::fmt::Arguments) {
+    let _ = writeln!(std::io::stderr(), "{line}");
+}
+
 impl Diag {
     fn error(&self, msg: impl AsRef<str>) {
-        eprintln!("{}: {}", self.p.bold_red("error"), msg.as_ref());
+        err_line(format_args!(
+            "{}: {}",
+            self.p.bold_red("error"),
+            msg.as_ref()
+        ));
     }
     fn detail(&self, msg: impl AsRef<str>) {
-        eprintln!("{}", msg.as_ref());
+        err_line(format_args!("{}", msg.as_ref()));
     }
     fn hint(&self, msg: impl AsRef<str>) {
-        eprintln!("  {}: {}", self.p.bold_cyan("hint"), msg.as_ref());
+        err_line(format_args!(
+            "  {}: {}",
+            self.p.bold_cyan("hint"),
+            msg.as_ref()
+        ));
+    }
+    fn note(&self, msg: impl AsRef<str>) {
+        err_line(format_args!(
+            "{}: {}",
+            self.p.bold_cyan("note"),
+            msg.as_ref()
+        ));
     }
 }
 
-fn write_outputs(args: &Args, path: &Path, report: &Report) -> std::io::Result<Vec<PathBuf>> {
+/// One input, ready to search: what runs, what is rewritten, and the
+/// context the sandbox needs.
+struct Prepared {
+    /// The script, as given.
+    path: PathBuf,
+    /// The file the candidates replace (the script unless --mutate).
+    mutated: PathBuf,
+    source: Source,
+    ctx: RunCtx,
+    info: RunInfo,
+    timings: Timings,
+    /// Keeps the project copy alive for the run.
+    _snapshot: Option<Snapshot>,
+}
+
+fn write_outputs(
+    args: &Args,
+    path: &Path,
+    src: &Source,
+    report: &Report,
+) -> std::io::Result<Vec<PathBuf>> {
     std::fs::create_dir_all(&args.out)?;
     let stem = path
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or("candidate");
     let best = args.out.join(format!("{stem}.best.py"));
-    std::fs::write(&best, &report.best_source)?;
+    // Same BOM and line endings as the input.
+    std::fs::write(&best, src.restore(&report.best_source))?;
     let mut written = vec![best];
     if args.json {
         let json = args.out.join(format!("{stem}.report.json"));
@@ -246,24 +319,32 @@ fn write_outputs(args: &Args, path: &Path, report: &Report) -> std::io::Result<V
 #[allow(clippy::too_many_arguments)]
 fn run_all(
     args: &Args,
-    inputs: &[(PathBuf, String)],
+    inputs: &[Prepared],
     check: Option<&str>,
     proposer: &dyn Proposer,
-    runner: &dyn Runner,
+    backend: &dyn Backend,
     cancel: &AtomicBool,
     emit: &mut dyn FnMut(Event),
 ) -> Vec<String> {
-    let cfg = Config {
-        gens: args.gens,
-        pop: args.pop,
-        patience: args.patience,
-        reps: args.reps,
-        margin: args.margin,
-        jobs: args.jobs,
-        token_budget: args.token_budget,
-    };
     let mut errors = Vec::new();
-    for (path, source) in inputs {
+    for input in inputs {
+        let cfg = Config {
+            gens: args.gens,
+            pop: args.pop,
+            patience: args.patience,
+            reps: args.reps,
+            margin: args.margin,
+            jobs: args.jobs,
+            token_budget: args.token_budget,
+            info: input.info.clone(),
+            ..Config::default()
+        };
+        let runner = Bound {
+            backend,
+            ctx: input.ctx.clone(),
+        };
+        let path = &input.path;
+        let source = &input.source.text;
         if cancel.load(Ordering::SeqCst) {
             break;
         }
@@ -272,16 +353,24 @@ fn run_all(
             panic!("ACO_TEST_PANIC is set");
         }
         let label = path.to_string_lossy().to_string();
-        match optimize(&label, source, proposer, runner, &cfg, check, cancel, emit) {
-            Ok(report) => match write_outputs(args, path, &report) {
-                Ok(paths) => emit(Event::Finished(Box::new(Summary::new(
-                    &report, source, paths,
-                )))),
-                Err(e) => errors.push(format!(
-                    "{label}: could not write to {}: {e}",
-                    args.out.display()
-                )),
-            },
+        match optimize(&label, source, proposer, &runner, &cfg, check, cancel, emit) {
+            Ok(mut report) => {
+                let t = &input.timings;
+                report.timings.project_ns = t.project_ns;
+                report.timings.parse_ns = t.parse_ns;
+                report.timings.policy_ns = t.policy_ns;
+                report.timings.deps_ns = t.deps_ns;
+                report.notes.splice(0..0, input.info.notes.iter().cloned());
+                match write_outputs(args, &input.mutated, &input.source, &report) {
+                    Ok(paths) => emit(Event::Finished(Box::new(Summary::new(
+                        &report, source, paths,
+                    )))),
+                    Err(e) => errors.push(format!(
+                        "{label}: could not write to {}: {e}",
+                        args.out.display()
+                    )),
+                }
+            }
             Err(e) if cancel.load(Ordering::SeqCst) => {
                 let _ = e;
                 break;
@@ -293,7 +382,7 @@ fn run_all(
 }
 
 /// Read and validate one input file, printing a diagnostic on failure.
-fn load(d: &Diag, path: &Path) -> Option<String> {
+fn load(d: &Diag, path: &Path) -> Option<Source> {
     let shown = path.display();
     let text = match std::fs::read(path) {
         Ok(bytes) => bytes,
@@ -315,12 +404,29 @@ fn load(d: &Diag, path: &Path) -> Option<String> {
             return None;
         }
     };
-    let Ok(source) = String::from_utf8(text) else {
-        d.error(format!("`{shown}` is not UTF-8 text"));
-        d.hint("aco reads Python source files; is this a binary or another encoding?");
-        return None;
+    let decoded = match aco::source::decode(&text) {
+        Ok(s) => s,
+        Err(e) => {
+            d.error(format!("`{shown}` cannot be read as Python source: {e}"));
+            return None;
+        }
     };
+    let source = decoded.text.clone();
     if let Some(se) = aco::policy::syntax_error(&source) {
+        if host_python_parses(path) {
+            d.error(format!(
+                "`{shown}` uses Python syntax aco cannot parse yet (line {}: {})",
+                se.line, se.message
+            ));
+            d.detail(format!("  {}", se.text.trim_end()));
+            d.hint(
+                "your Python accepts it, but aco's parser (rustpython-parser 0.4) does not \
+                 support all newer syntax yet, notably Python 3.12 f-strings that reuse the \
+                 enclosing quote inside a replacement field (PEP 701). Rewrite that line in \
+                 the older form to optimise this file",
+            );
+            return None;
+        }
         d.error(format!("`{shown}` is not valid Python: {}", se.message));
         let gutter = se.line.to_string().len();
         d.detail(format!(
@@ -367,8 +473,11 @@ fn load(d: &Diag, path: &Path) -> Option<String> {
         ));
         return None;
     }
-    if let Err(v) = aco::policy::check(&source) {
-        d.error(format!("`{shown}` was rejected before running: it {v}"));
+    if let Err(f) = aco::policy::check_located(&source) {
+        d.error(format!(
+            "`{shown}` was rejected before running: line {} {}",
+            f.line, f.violation
+        ));
         d.hint(
             "aco only optimises self-contained computation: no file, process, network or \
              introspection access. The sandbox is the real boundary; this check just refuses \
@@ -376,7 +485,257 @@ fn load(d: &Diag, path: &Path) -> Option<String> {
         );
         return None;
     }
-    Some(source)
+    Some(decoded)
+}
+
+/// `p` relative to the current directory when it is under it.
+fn shown_path(p: &Path) -> String {
+    std::env::current_dir()
+        .ok()
+        .and_then(|c| c.canonicalize().ok())
+        .and_then(|c| p.strip_prefix(c).ok().map(|r| r.display().to_string()))
+        .unwrap_or_else(|| p.display().to_string())
+}
+
+/// True when the host's `python3` parses the file (parsing only; nothing in
+/// it runs). Distinguishes newer syntax from real syntax errors.
+fn host_python_parses(path: &Path) -> bool {
+    std::process::Command::new("python3")
+        .args([
+            "-I",
+            "-c",
+            "import ast,sys; ast.parse(open(sys.argv[1],'rb').read())",
+        ])
+        .arg(path)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success())
+}
+
+/// Resolve the project, check every local file, install requirements, and
+/// build the sandbox context for one input. Prints diagnostics and returns
+/// `None` on bad input.
+fn prepare(d: &Diag, args: &Args, backend: &dyn Backend, path: &Path) -> Option<Prepared> {
+    let shown = path.display().to_string();
+    let target_src = load(d, path)?;
+    let t0 = std::time::Instant::now();
+    let proj: Project =
+        match project::analyze(path, args.project_root.as_deref(), args.mutate.as_deref()) {
+            Ok(p) => p,
+            Err(e) => {
+                d.error(e);
+                return None;
+            }
+        };
+    let project_ns = t0.elapsed().as_nanos() as u64;
+    let (mutated, source) = if proj.mutated != proj.target {
+        let m = proj.mutated_path();
+        (m.clone(), load(d, &m)?)
+    } else {
+        (path.to_path_buf(), target_src)
+    };
+    // Measured separately for the report: one parse of the rewritten file,
+    // and the policy pass over it and every other local file.
+    let t1 = std::time::Instant::now();
+    let parsed = aco::policy::parse_module(&source.text);
+    let parse_ns = t1.elapsed().as_nanos() as u64;
+    let t2 = std::time::Instant::now();
+    let own = parsed.map_err(|e| e.to_string()).and_then(|b| {
+        aco::policy::check_ast_located(&b, &source.text).map_err(|f| f.violation.to_string())
+    });
+    if own.is_err() {
+        // load() already reported it; unreachable in practice.
+        return None;
+    }
+    if let Err(e) = proj.check_policy() {
+        d.error(format!(
+            "a local module `{shown}` imports was rejected before running: {e}"
+        ));
+        d.hint(
+            "the pre-filter applies to every local file that runs in the sandbox, not only \
+             the one being rewritten (see SECURITY.md)",
+        );
+        return None;
+    }
+    let policy_ns = t2.elapsed().as_nanos() as u64;
+
+    let mut notes = proj.notes.clone();
+    // Third-party requirements.
+    let t2 = std::time::Instant::now();
+    let reqs = if args.no_requirements {
+        None
+    } else {
+        match aco::deps::discover(args.requirements.as_deref(), &proj.root) {
+            Ok(r) => r,
+            Err(e) => {
+                d.error(format!("requirements: {e}"));
+                return None;
+            }
+        }
+    };
+    let mut deps = DepsEnv::default();
+    let mut packages = Vec::new();
+    let mut installed_tops = std::collections::BTreeSet::new();
+    if let Some(r) = &reqs {
+        if !r.specs.is_empty() {
+            d.note(format!(
+                "installing {} from {} for the {} sandbox (wheels only; cached after the first run)",
+                r.specs.join(", "),
+                r.source,
+                backend.name()
+            ));
+            match backend.prepare_deps(r) {
+                Ok(inst) => {
+                    d.note(format!(
+                        "{} for Python {}: {}",
+                        if inst.cached {
+                            "using cached packages"
+                        } else {
+                            "installed"
+                        },
+                        inst.python,
+                        inst.packages
+                            .iter()
+                            .map(|p| format!("{} {}", p.name, p.version))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ));
+                    installed_tops = inst.top_level();
+                    packages = inst
+                        .packages
+                        .iter()
+                        .map(|p| PackageInfo {
+                            name: p.name.clone(),
+                            version: p.version.clone(),
+                        })
+                        .collect();
+                    deps = DepsEnv {
+                        host_dir: inst.host_dir.clone(),
+                        docker_image: inst.docker_image.clone(),
+                    };
+                }
+                Err(e) => {
+                    d.error(format!(
+                        "could not install requirements from {}: {e}",
+                        r.source
+                    ));
+                    return None;
+                }
+            }
+        }
+    }
+    let deps_ns = if reqs.is_some() {
+        t2.elapsed().as_nanos() as u64
+    } else {
+        0
+    };
+    match proj.check_external(&installed_tops, reqs.as_ref().map(|r| r.source.as_str())) {
+        Ok(n) => notes.extend(n),
+        Err(e) => {
+            d.error(e);
+            if args.no_requirements {
+                d.hint("--no-requirements is set, so nothing was installed");
+            }
+            return None;
+        }
+    }
+
+    // Is the hot code somewhere aco is not rewriting?
+    if aco::mutate::rewrites(&source.text).is_empty() && proj.files.len() > 1 {
+        let others = proj.other_files_where(|t| !aco::mutate::rewrites(t).is_empty());
+        if !others.is_empty() {
+            notes.push(format!(
+                "the rules find nothing to rewrite in {}, but they do in {}; only one file \
+                 is rewritten per run, so try --mutate {}",
+                proj.mutated,
+                others.join(", "),
+                shown_path(&proj.root.join(&others[0]))
+            ));
+        }
+    }
+
+    let stdin = match &args.stdin {
+        Some(p) => match std::fs::metadata(p) {
+            Ok(m) if m.len() > 16 << 20 => {
+                d.error(format!("--stdin `{}` is over 16 MiB", p.display()));
+                return None;
+            }
+            _ => match std::fs::read(p) {
+                Ok(b) => match String::from_utf8(b) {
+                    Ok(t) => Some(t),
+                    Err(_) => {
+                        d.error(format!("--stdin `{}` is not UTF-8 text", p.display()));
+                        return None;
+                    }
+                },
+                Err(e) => {
+                    d.error(format!("cannot read --stdin `{}`: {e}", p.display()));
+                    return None;
+                }
+            },
+        },
+        None => None,
+    };
+
+    let multi = proj.is_multi_file();
+    let snapshot = if multi {
+        match proj.snapshot() {
+            Ok(s) => Some(s),
+            Err(e) => {
+                d.error(e);
+                return None;
+            }
+        }
+    } else {
+        None
+    };
+    let ctx = RunCtx {
+        project: snapshot.as_ref().map(|s| s.dir.clone()),
+        target: proj.target.clone(),
+        mutated: proj.mutated.clone(),
+        argv: args.script_args.clone(),
+        stdin,
+        deps,
+    };
+    let info = RunInfo {
+        project_root: multi.then(|| proj.root.display().to_string()),
+        target: Some(proj.target.clone()),
+        mutated: Some(proj.mutated.clone()),
+        files: proj
+            .files
+            .iter()
+            .map(|f| FileInfo {
+                path: f.rel.clone(),
+                lines: f.lines,
+                bytes: f.bytes,
+            })
+            .collect(),
+        requirements: reqs.as_ref().map(|r| r.source.clone()),
+        packages,
+        argv: args.script_args.clone(),
+        stdin: args.stdin.as_ref().map(|p| p.display().to_string()),
+        notes,
+    };
+    for n in &info.notes {
+        d.note(n);
+    }
+    Some(Prepared {
+        path: path.to_path_buf(),
+        mutated,
+        source,
+        ctx,
+        info,
+        timings: Timings {
+            project_ns,
+            parse_ns,
+            policy_ns,
+            deps_ns,
+            ..Timings::default()
+        },
+        _snapshot: snapshot,
+    })
 }
 
 fn main() -> ExitCode {
@@ -393,11 +752,14 @@ fn main() -> ExitCode {
         d.error("--check takes exactly one input file");
         return ExitCode::from(2);
     }
-    let mut inputs = Vec::new();
+    if args.mutate.is_some() && args.files.len() != 1 {
+        d.error("--mutate takes exactly one input file");
+        return ExitCode::from(2);
+    }
+    // Validate every input before touching a sandbox.
     for f in &args.files {
-        match load(&d, f) {
-            Some(s) => inputs.push((f.clone(), s)),
-            None => return ExitCode::from(2),
+        if load(&d, f).is_none() {
+            return ExitCode::from(2);
         }
     }
     let check = match &args.check {
@@ -416,7 +778,7 @@ fn main() -> ExitCode {
         warmup: args.warmup,
         ..Limits::default()
     };
-    let runner = match select(args.sandbox, limits) {
+    let backend = match select(args.sandbox, limits) {
         Ok(r) => r,
         Err(e) => {
             d.error("no sandbox is available, so aco will not run any code");
@@ -427,6 +789,13 @@ fn main() -> ExitCode {
             return ExitCode::from(3);
         }
     };
+    let mut inputs = Vec::new();
+    for f in &args.files {
+        match prepare(&d, &args, backend.as_ref(), f) {
+            Some(p) => inputs.push(p),
+            None => return ExitCode::from(2),
+        }
+    }
     let samples = args.pop.saturating_sub(1).max(1);
     let model = || -> Box<dyn Proposer> {
         Box::new(HttpProposer::new(
@@ -491,7 +860,7 @@ fn main() -> ExitCode {
                 &inputs,
                 check.as_deref(),
                 proposer.as_ref(),
-                runner.as_ref(),
+                backend.as_ref(),
                 &cancel,
                 &mut emit,
             )
@@ -526,7 +895,7 @@ fn main() -> ExitCode {
                     &inputs,
                     check.as_deref(),
                     proposer.as_ref(),
-                    runner.as_ref(),
+                    backend.as_ref(),
                     &cancel,
                     &mut tap,
                 )
@@ -543,6 +912,11 @@ fn main() -> ExitCode {
                 d.error(format!("internal error, the search stopped: {msg}"));
                 d.hint("please report this at https://github.com/ayaan-cs/aco/issues");
                 return ExitCode::from(101);
+            }
+            Ok(Exit::TerminalLost((mut errors, local), e)) => {
+                finished = local;
+                errors.push(format!("terminal error: {e}"));
+                errors
             }
             Err(e) => vec![format!("terminal error: {e}")],
         }
@@ -564,6 +938,9 @@ fn main() -> ExitCode {
         }
     }
     if cancel.load(Ordering::SeqCst) {
+        for e in errors.iter().filter(|e| e.starts_with("terminal error")) {
+            d.error(e);
+        }
         d.error(format!(
             "cancelled; {} of {} file(s) finished",
             finished.len(),
@@ -587,8 +964,8 @@ fn force_quit(tui: bool) -> ! {
     abort_all();
     std::thread::sleep(Duration::from_millis(150));
     if tui {
-        ratatui::restore();
+        aco::tui::restore_terminal();
     }
-    eprintln!("aco: force quit");
+    err_line(format_args!("aco: force quit"));
     std::process::exit(130);
 }

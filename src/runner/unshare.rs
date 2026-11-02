@@ -4,7 +4,9 @@
 //! gives the candidate its own user, mount, PID and network namespaces (the
 //! network namespace has only a downed loopback). Inside, a constant setup
 //! script builds a private tmpfs root holding read-only binds of `/usr` and of
-//! the work files, `pivot_root`s into it and detaches the host root, then drops
+//! the work files and the project snapshot (plus the candidate mounted over
+//! the file it replaces, and installed requirements at /deps), `pivot_root`s
+//! into it and detaches the host root, then drops
 //! every capability with `setpriv --no-new-privs`, clears the environment and
 //! applies rlimits with `prlimit` before exec'ing the harness.
 //!
@@ -14,15 +16,17 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 
-use super::{parse_outcome, run_captured, Limits, Outcome, Runner, WorkDir};
+use super::{parse_outcome, run_captured, Backend, Limits, Outcome, RunCtx, Runner, WorkDir};
+use crate::deps::{Installed, Requirements};
 
 /// Runs inside the new namespaces. Positional arguments only; nothing from the
 /// candidate is interpolated into the script.
 const SETUP: &str = r#"set -eu
-root="$1"; files="$2"; cpu="$3"; as="$4"; fsize="$5"; nproc="$6"; nofile="$7"; py="$8"
-shift 8
+root="$1"; files="$2"; proj="$3"; overlay="$4"; deps="$5"; seed="$6"
+cpu="$7"; as="$8"; fsize="$9"; nproc="${10}"; nofile="${11}"; py="${12}"
+shift 12
 mount -t tmpfs -o size=8m,mode=755 aco-root "$root"
-mkdir -p "$root/usr" "$root/work" "$root/tmp" "$root/proc" "$root/dev" "$root/.old"
+mkdir -p "$root/usr" "$root/work" "$root/proj" "$root/tmp" "$root/proc" "$root/dev" "$root/.old"
 mount --rbind /usr "$root/usr"
 mount -o remount,bind,ro "$root/usr"
 ln -s usr/bin "$root/bin"
@@ -30,6 +34,17 @@ ln -s usr/lib "$root/lib"
 if [ -d /usr/lib64 ]; then ln -s usr/lib64 "$root/lib64"; fi
 mount --bind "$files" "$root/work"
 mount -o remount,bind,ro "$root/work"
+mount --bind "$proj" "$root/proj"
+mount -o remount,bind,ro "$root/proj"
+if [ "$overlay" != "-" ]; then
+  mount --bind "$files/candidate.py" "$root/proj/$overlay"
+  mount -o remount,bind,ro "$root/proj/$overlay"
+fi
+if [ "$deps" != "-" ]; then
+  mkdir -p "$root/deps"
+  mount --bind "$deps" "$root/deps"
+  mount -o remount,bind,ro "$root/deps"
+fi
 mount -t tmpfs -o size=64m,nosuid,nodev tmpfs "$root/tmp"
 touch "$root/dev/null"
 mount --bind /dev/null "$root/dev/null"
@@ -41,9 +56,10 @@ rmdir /.old
 mount -o remount,bind,ro /
 cd /tmp
 exec setpriv --no-new-privs --inh-caps=-all --ambient-caps=-all --bounding-set=-all -- \
-  /usr/bin/env -i PATH=/usr/bin HOME=/tmp \
+  /usr/bin/env -i PATH=/usr/bin HOME=/tmp PYTHONHASHSEED="$seed" OMP_NUM_THREADS=1 \
+  OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
   /usr/bin/prlimit --cpu="$cpu" --as="$as" --fsize="$fsize" --nproc="$nproc" --nofile="$nofile" -- \
-  "$py" -I -B "$@"
+  "$py" -s -B "$@"
 "#;
 
 const NS_FLAGS: &[&str] = &[
@@ -129,18 +145,19 @@ impl UnshareRunner {
     }
 }
 
-impl Runner for UnshareRunner {
+impl Backend for UnshareRunner {
     fn name(&self) -> &'static str {
         "unshare"
     }
 
-    fn run(&self, source: &str, reps: usize) -> Outcome {
-        let wd = match WorkDir::new(source) {
+    fn exec(&self, ctx: &RunCtx, source: &str, reps: usize, seed: u32) -> Outcome {
+        let l = &self.limits;
+        let nonce = super::nonce();
+        let deps = ctx.deps.host_dir.as_ref();
+        let wd = match WorkDir::new(source, ctx, reps, l.warmup, &nonce, deps.map(|_| "/deps")) {
             Ok(w) => w,
             Err(e) => return Outcome::failed(format!("could not create work dir: {e}")),
         };
-        let nonce = super::nonce();
-        let l = &self.limits;
         let mut cmd = Command::new(&self.unshare_bin);
         cmd.args(NS_FLAGS)
             .arg("--kill-child")
@@ -151,6 +168,13 @@ impl Runner for UnshareRunner {
             .arg("aco-sandbox")
             .arg(wd.root())
             .arg(wd.files())
+            .arg(wd.project(ctx))
+            .arg(wd.overlay(ctx).unwrap_or("-"))
+            .arg(
+                deps.map(|d| d.as_os_str().to_owned())
+                    .unwrap_or_else(|| "-".into()),
+            )
+            .arg(seed.to_string())
             .arg(l.cpu_secs().to_string())
             .arg((l.memory_mb << 20).to_string())
             .arg((l.fsize_mb << 20).to_string())
@@ -158,15 +182,28 @@ impl Runner for UnshareRunner {
             .arg(l.nofile.to_string())
             .arg(&self.python)
             .arg("/work/harness.py")
-            .arg("/work/candidate.py")
-            .arg(reps.to_string())
-            .arg(l.warmup.to_string())
-            .arg(&nonce)
+            .arg("/work/run.json")
             .env_clear()
             .env("PATH", SETUP_PATH);
         match run_captured(cmd, l.timeout, l.output_cap, &|| {}) {
             Ok(c) => parse_outcome(&c, &nonce),
             Err(e) => Outcome::failed(format!("could not start unshare: {e}")),
         }
+    }
+
+    fn prepare_deps(&self, reqs: &Requirements) -> Result<Installed, String> {
+        crate::deps::install_host(&self.python, reqs)
+    }
+}
+
+impl Runner for UnshareRunner {
+    fn name(&self) -> &'static str {
+        "unshare"
+    }
+    fn run(&self, source: &str, reps: usize) -> Outcome {
+        self.exec(&RunCtx::default(), source, reps, 0)
+    }
+    fn run_seeded(&self, source: &str, reps: usize, seed: u32) -> Outcome {
+        self.exec(&RunCtx::default(), source, reps, seed)
     }
 }

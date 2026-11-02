@@ -294,12 +294,12 @@ impl Dashboard {
         }
         let summary = self.current_summary();
         let bottom_h = if summary.is_some() {
-            (area.height.saturating_sub(4 + 3 + 6 + 1 + 6)).clamp(8, 14)
+            (area.height.saturating_sub(5 + 3 + 6 + 1 + 6)).clamp(8, 14)
         } else {
             0
         };
         let [head, gauge, sparks, table, bottom, foot] = Layout::vertical([
-            Constraint::Length(4),
+            Constraint::Length(5),
             Constraint::Length(3),
             Constraint::Length(6),
             Constraint::Min(6),
@@ -374,6 +374,12 @@ impl Dashboard {
                 Span::styled(self.sandbox.clone(), Style::new().fg(Color::Cyan)),
                 key("   proposer "),
                 Span::styled(self.proposer.clone(), Style::new().fg(Color::Cyan)),
+            ]),
+            Line::from(vec![
+                key("code "),
+                Span::raw(crate::ui::code_text(&c.info)),
+                key("   packages "),
+                Span::raw(crate::ui::packages_text(&c.info)),
             ]),
             Line::from(vec![
                 key("search "),
@@ -652,10 +658,101 @@ fn draw_diff(f: &mut Frame, area: Rect, s: &Summary) {
     );
 }
 
+/// Enter raw mode and the alternate screen, and install a panic hook that
+/// restores the terminal before the panic message. Like `ratatui::init`, but
+/// neither this nor [`restore_terminal`] panics or prints when the terminal has
+/// gone away (ratatui's versions use `eprintln!`, which panics on a dead stderr
+/// and turned a closed window into an abort).
+fn init_terminal() -> io::Result<ratatui::DefaultTerminal> {
+    crossterm::terminal::enable_raw_mode()?;
+    if let Err(e) = crossterm::execute!(io::stdout(), crossterm::terminal::EnterAlternateScreen) {
+        let _ = crossterm::terminal::disable_raw_mode();
+        return Err(e);
+    }
+    let hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        restore_terminal();
+        hook(info);
+    }));
+    ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(io::stdout()))
+}
+
+/// Leave raw mode and the alternate screen, ignoring failures.
+pub fn restore_terminal() {
+    let _ = crossterm::terminal::disable_raw_mode();
+    let _ = crossterm::execute!(io::stdout(), crossterm::terminal::LeaveAlternateScreen);
+}
+
+/// Read terminal events on a detached thread and forward them.
+///
+/// crossterm's reader never returns once the terminal hangs up: reading the
+/// closed tty yields end-of-file, which it retries forever at 100% CPU. Keeping
+/// it off the UI thread means the dashboard can still notice the hang-up (or a
+/// SIGHUP via the cancel flag) and exit; the process exit then ends this thread.
+/// It is detached rather than scoped so that joining can never block on it.
+fn spawn_key_reader() -> mpsc::Receiver<TermEvent> {
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        while let Ok(e) = event::read() {
+            if tx.send(e).is_err() {
+                break;
+            }
+        }
+    });
+    rx
+}
+
+/// Detects that the controlling terminal has been hung up (its window or
+/// pty closed), which no write or draw reliably reports.
+struct Hangup {
+    #[cfg(unix)]
+    tty: std::fs::File,
+}
+
+impl Hangup {
+    #[cfg(unix)]
+    fn open() -> Option<Self> {
+        std::fs::File::open("/dev/tty")
+            .ok()
+            .map(|tty| Hangup { tty })
+    }
+
+    #[cfg(not(unix))]
+    fn open() -> Option<Self> {
+        None
+    }
+
+    #[cfg(unix)]
+    fn hung_up(&self) -> bool {
+        use rustix::event::{poll, PollFd, PollFlags};
+        let mut fds = [PollFd::new(&self.tty, PollFlags::IN)];
+        match poll(
+            &mut fds,
+            Some(&rustix::event::Timespec {
+                tv_sec: 0,
+                tv_nsec: 0,
+            }),
+        ) {
+            Ok(_) => fds[0]
+                .revents()
+                .intersects(PollFlags::HUP | PollFlags::ERR | PollFlags::NVAL),
+            Err(_) => false,
+        }
+    }
+
+    #[cfg(not(unix))]
+    fn hung_up(&self) -> bool {
+        false
+    }
+}
+
 /// How the dashboard ended.
 pub enum Exit<T> {
     /// The work finished (possibly after a cancel request).
     Done(T),
+    /// The terminal failed or was closed; the work was cancelled and this is
+    /// what it returned.
+    TerminalLost(T, io::Error),
     /// The search thread panicked; the terminal is already restored.
     Panicked(String),
 }
@@ -677,9 +774,17 @@ pub fn run_dashboard<T: Send>(
             };
             work(&mut emit)
         });
-        // ratatui::init enters the alternate screen and raw mode and installs
-        // a panic hook that restores the terminal before the panic message.
-        let mut terminal = ratatui::init();
+        let mut terminal = match init_terminal() {
+            Ok(t) => t,
+            Err(e) => {
+                cancel.store(true, Ordering::SeqCst);
+                on_cancel();
+                let _ = handle.join();
+                return Err(e);
+            }
+        };
+        let keys = spawn_key_reader();
+        let hangup = Hangup::open();
         let mut dash = Dashboard::new(total_files);
         let mut handle = Some(handle);
         let mut output: Option<std::thread::Result<T>> = None;
@@ -708,8 +813,28 @@ pub fn run_dashboard<T: Send>(
                     dash.status = "cancelling: stopping sandboxes…".into();
                 }
                 terminal.draw(|f| dash.draw(f))?;
-                if event::poll(Duration::from_millis(50))? {
-                    match event::read()? {
+                if hangup.as_ref().is_some_and(Hangup::hung_up) {
+                    return Err(io::Error::new(
+                        io::ErrorKind::BrokenPipe,
+                        "the terminal was closed",
+                    ));
+                }
+                let first = match keys.recv_timeout(Duration::from_millis(50)) {
+                    Ok(e) => Some(e),
+                    Err(mpsc::RecvTimeoutError::Timeout) => None,
+                    Err(mpsc::RecvTimeoutError::Disconnected) => {
+                        // The reader hit a terminal error: same as a hang-up.
+                        return Err(io::Error::new(
+                            io::ErrorKind::BrokenPipe,
+                            "the terminal stopped delivering input",
+                        ));
+                    }
+                };
+                for ev in first
+                    .into_iter()
+                    .chain(std::iter::from_fn(|| keys.try_recv().ok()))
+                {
+                    match ev {
                         TermEvent::Key(k) if k.kind != KeyEventKind::Release => {
                             let ctrl_c = k.code == KeyCode::Char('c')
                                 && k.modifiers.contains(KeyModifiers::CONTROL);
@@ -738,7 +863,12 @@ pub fn run_dashboard<T: Send>(
                 }
             }
         })();
-        ratatui::restore();
+        // Show the cursor ourselves and leak the (small) handle: ratatui's Drop
+        // prints with `eprintln!` when that fails, which panics if the
+        // terminal has been closed.
+        let _ = terminal.show_cursor();
+        std::mem::forget(terminal);
+        restore_terminal();
         // If the loop failed (terminal I/O), stop the work before joining.
         if result.is_err() {
             cancel.store(true, Ordering::SeqCst);
@@ -748,10 +878,10 @@ pub fn run_dashboard<T: Send>(
             Some(o) => o,
             None => handle.take().map(|h| h.join()).expect("handle present"),
         };
-        result?;
-        Ok(match out {
-            Ok(v) => Exit::Done(v),
-            Err(p) => Exit::Panicked(
+        Ok(match (out, result) {
+            (Ok(v), Ok(())) => Exit::Done(v),
+            (Ok(v), Err(e)) => Exit::TerminalLost(v, e),
+            (Err(p), _) => Exit::Panicked(
                 p.downcast_ref::<&str>()
                     .map(|s| s.to_string())
                     .or_else(|| p.downcast_ref::<String>().cloned())

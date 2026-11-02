@@ -84,6 +84,47 @@ impl Paint {
 // --------------------------------------------------------------- numbers
 
 /// A duration in nanoseconds with a unit that keeps 3-4 significant digits.
+/// "3 files · 412 lines · rewriting pkg/helper.py", or "1 file · 23 lines".
+pub fn code_text(info: &crate::search::RunInfo) -> String {
+    let n = info.files.len().max(1);
+    let lines: usize = info.files.iter().map(|f| f.lines).sum();
+    let mut s = format!("{n} file{} · {lines} lines", if n == 1 { "" } else { "s" });
+    if let Some(root) = &info.project_root {
+        s.push_str(&format!(" · root {root}"));
+    }
+    if let (Some(m), Some(t)) = (&info.mutated, &info.target) {
+        if m != t {
+            s.push_str(&format!(" · rewriting {m}"));
+        }
+    }
+    if !info.argv.is_empty() {
+        s.push_str(&format!(" · args {}", info.argv.join(" ")));
+    }
+    if let Some(i) = &info.stdin {
+        s.push_str(&format!(" · stdin {i}"));
+    }
+    s
+}
+
+/// "numpy 2.1.3, attrs 24.2.0 (from requirements.txt)", or "none".
+pub fn packages_text(info: &crate::search::RunInfo) -> String {
+    if info.packages.is_empty() {
+        return match &info.requirements {
+            Some(r) => format!("none installed (from {r})"),
+            None => "none (standard library only)".into(),
+        };
+    }
+    let list: Vec<String> = info
+        .packages
+        .iter()
+        .map(|p| format!("{} {}", p.name, p.version))
+        .collect();
+    match &info.requirements {
+        Some(r) => format!("{} (from {r})", list.join(", ")),
+        None => list.join(", "),
+    }
+}
+
 pub fn dur(ns: u64) -> String {
     let v = ns as f64;
     if v >= 1e9 {
@@ -136,7 +177,12 @@ pub fn decision_text(d: Decision, margin: f64) -> String {
 /// Pad to `width` display columns (counting chars), never truncating.
 pub fn pad(s: &str, width: usize) -> String {
     let n = s.chars().count();
-    if n >= width {
+    if n > width && width > 1 {
+        // Clip so the columns stay aligned; the report has the full text.
+        let mut out: String = s.chars().take(width - 1).collect();
+        out.push('…');
+        out
+    } else if n == width {
         s.to_string()
     } else {
         format!("{s}{}", " ".repeat(width - n))
@@ -254,7 +300,7 @@ pub fn diff(a: &str, b: &str, context: usize) -> Vec<(DiffKind, String)> {
 
 // ----------------------------------------------------------------- plain
 
-const ORIGIN_W: usize = 30;
+const ORIGIN_W: usize = 32;
 
 /// Renders events as aligned lines for `--plain` (and non-terminal stdout).
 pub struct Plain {
@@ -310,6 +356,16 @@ impl Plain {
                     p.dim(env!("CARGO_PKG_VERSION")),
                     p.dim("·"),
                     p.bold(file)
+                ));
+                v.push(format!(
+                    "  {}  {}",
+                    p.dim("code    "),
+                    code_text(&config.info)
+                ));
+                v.push(format!(
+                    "  {}  {}",
+                    p.dim("packages"),
+                    packages_text(&config.info)
                 ));
                 v.push(format!("  {}  {}", p.dim("sandbox "), sandbox));
                 v.push(format!("  {}  {}", p.dim("proposer"), proposer));
@@ -381,9 +437,11 @@ impl Plain {
             Event::ConfirmStart { origin, rounds } => vec![
                 String::new(),
                 format!(
-                    "  {} {} against the baseline, {} interleaved runs in fresh sandboxes",
+                    "  {} {} against the baseline, {} interleaved runs in fresh sandboxes \
+                     (hash seeds 1-{})",
                     p.bold("confirm"),
                     origin,
+                    rounds,
                     rounds
                 ),
             ],
@@ -397,10 +455,12 @@ impl Plain {
                     ))
                 };
                 vec![format!(
-                    "          baseline {} · candidate {} · {}  {}",
+                    "          baseline {} · candidate {} · {} · won {}/{}  {}",
                     dur(c.baseline_median_ns),
                     dur(c.candidate_median_ns),
                     speedup(c.speedup),
+                    c.candidate_wins,
+                    c.baseline_times_ns.len(),
                     verdict
                 )]
             }

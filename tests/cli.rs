@@ -110,7 +110,10 @@ fn non_python_and_binary_files_are_refused() {
     let o = aco().arg(&bin).output().unwrap();
     let (_, err) = text(&o);
     assert_eq!(o.status.code(), Some(2));
-    assert!(err.contains("is not UTF-8 text"), "{err}");
+    assert!(
+        err.contains("it is not text (it contains NUL bytes)"),
+        "{err}"
+    );
 
     let o = aco().arg(env!("CARGO_MANIFEST_DIR")).output().unwrap();
     assert_eq!(o.status.code(), Some(2));

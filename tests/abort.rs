@@ -3,7 +3,7 @@
 
 use std::time::{Duration, Instant};
 
-use aco::runner::{abort_all, select, Limits, SandboxKind};
+use aco::runner::{abort_all, select, Limits, Runner, SandboxKind};
 
 #[test]
 fn abort_kills_a_running_sandbox_quickly() {
@@ -25,12 +25,12 @@ fn abort_kills_a_running_sandbox_quickly() {
         abort_all();
     });
     let t = Instant::now();
-    let o = r.run("while True:\n    pass\n", 1);
+    let o = aco::runner::Bound::single(r.as_ref()).run("while True:\n    pass\n", 1);
     let took = t.elapsed();
     assert!(!o.ok());
     assert_eq!(o.error.as_deref(), Some("cancelled"), "{o:?}");
     assert!(took < Duration::from_secs(10), "abort took {took:?}");
     // And nothing new starts after an abort.
-    let o = r.run("print(1)\n", 1);
+    let o = aco::runner::Bound::single(r.as_ref()).run("print(1)\n", 1);
     assert!(!o.ok());
 }

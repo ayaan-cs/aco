@@ -9,13 +9,75 @@
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc;
+use std::time::Instant;
 
 use serde::Serialize;
 
 use crate::policy;
 use crate::propose::{Candidate, Proposer};
 use crate::runner::{Outcome, Runner};
-use crate::score::{self, judge, median, reward, Decision, Oracle};
+use crate::score::{self, judge, median, reward, same_behaviour, Decision, Oracle};
+
+/// Baselines faster than this are not optimised: per-run noise in a fresh
+/// sandbox is then too large relative to the time to trust a 5% gate.
+pub const MIN_BASELINE_NS: u64 = 1_000_000;
+
+/// Fraction of confirmation rounds the candidate must win head to head.
+pub const PAIRED_WIN_FRACTION: f64 = 0.75;
+
+/// A local file in the run (project mode).
+#[derive(Clone, Debug, Default, Serialize)]
+pub struct FileInfo {
+    pub path: String,
+    pub lines: usize,
+    pub bytes: u64,
+}
+
+/// An installed requirement.
+#[derive(Clone, Debug, Default, Serialize)]
+pub struct PackageInfo {
+    pub name: String,
+    pub version: String,
+}
+
+/// What the run covers beyond the one file: filled in by the caller and
+/// shown in the dashboard header and the report.
+#[derive(Clone, Debug, Default, Serialize)]
+pub struct RunInfo {
+    /// Project root, when the target imports local modules.
+    pub project_root: Option<String>,
+    /// The script that runs (relative to the root).
+    pub target: Option<String>,
+    /// The file being rewritten (relative to the root).
+    pub mutated: Option<String>,
+    /// Every local file copied into the sandbox, target first.
+    pub files: Vec<FileInfo>,
+    /// Where requirements came from.
+    pub requirements: Option<String>,
+    pub packages: Vec<PackageInfo>,
+    /// Script arguments after `--`.
+    pub argv: Vec<String>,
+    /// File fed to stdin.
+    pub stdin: Option<String>,
+    pub notes: Vec<String>,
+}
+
+/// Where the time went, in nanoseconds of wall clock.
+#[derive(Clone, Debug, Default, Serialize)]
+pub struct Timings {
+    /// Resolving the import closure (reading and parsing every local file).
+    pub project_ns: u64,
+    /// One parse of the file being rewritten.
+    pub parse_ns: u64,
+    /// The policy pre-filter over the rewritten file and every local module.
+    pub policy_ns: u64,
+    /// Installing or loading requirements (0 when there are none).
+    pub deps_ns: u64,
+    /// Time spent inside the proposer.
+    pub propose_ns: u64,
+    /// The whole search including sandbox runs and confirmation.
+    pub search_ns: u64,
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Config {
@@ -26,6 +88,11 @@ pub struct Config {
     pub margin: f64,
     pub jobs: usize,
     pub token_budget: u32,
+    /// Baselines faster than this are reported as too fast to measure.
+    pub min_baseline_ns: u64,
+    /// Context shown in the header and copied into the report.
+    #[serde(skip)]
+    pub info: RunInfo,
 }
 
 impl Default for Config {
@@ -38,6 +105,8 @@ impl Default for Config {
             margin: 0.05,
             jobs: 2,
             token_budget: 512,
+            min_baseline_ns: MIN_BASELINE_NS,
+            info: RunInfo::default(),
         }
     }
 }
@@ -79,6 +148,10 @@ pub struct Confirmation {
     pub baseline_median_ns: u64,
     pub candidate_median_ns: u64,
     pub speedup: f64,
+    /// Rounds in which the candidate was faster than the baseline.
+    pub candidate_wins: usize,
+    /// `PYTHONHASHSEED` of each round (baseline and candidate share it).
+    pub seeds: Vec<u32>,
     pub oracle_ok: bool,
     pub passed: bool,
     pub detail: Option<String>,
@@ -89,6 +162,9 @@ pub struct Measured {
     pub median_ns: u64,
     pub times_ns: Vec<u64>,
     pub peak_rss_kb: u64,
+    pub exit_code: i64,
+    /// First 2000 characters of stderr, when there was any.
+    pub stderr: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -110,6 +186,8 @@ pub struct Report {
     pub sandbox: String,
     pub proposer: String,
     pub config: Config,
+    /// Project files, requirements and packages, arguments.
+    pub run: RunInfo,
     pub baseline: Measured,
     pub candidates: Vec<CandidateRecord>,
     pub generations: Vec<GenerationRecord>,
@@ -117,6 +195,8 @@ pub struct Report {
     pub confirmation: Option<Confirmation>,
     pub best: Best,
     pub best_source: String,
+    pub notes: Vec<String>,
+    pub timings: Timings,
 }
 
 /// Progress events, in order. The TUI and `--plain` render these; neither
@@ -265,6 +345,8 @@ fn measured(o: &Outcome) -> Measured {
         median_ns: o.median_ns,
         times_ns: o.times_ns.clone(),
         peak_rss_kb: o.peak_rss_kb,
+        exit_code: o.exit_code,
+        stderr: (!o.stderr.is_empty()).then(|| o.stderr.chars().take(2000).collect()),
     }
 }
 
@@ -280,6 +362,9 @@ pub fn optimize(
     cancel: &AtomicBool,
     emit: &mut dyn FnMut(Event),
 ) -> Result<Report, String> {
+    let started = Instant::now();
+    let mut propose_ns = 0u64;
+    let mut notes: Vec<String> = Vec::new();
     policy::check(source).map_err(|v| format!("{file}: rejected before running: {v}"))?;
     emit(Event::Start {
         file: file.to_string(),
@@ -304,17 +389,36 @@ pub fn optimize(
         Some(expected) => {
             let o = Oracle::Expected {
                 stdout: expected.to_string(),
+                exit_code: baseline.exit_code,
             };
             if !o.matches(&baseline) {
                 return Err(format!("{file}: baseline stdout does not match --check"));
             }
             o
         }
-        None => Oracle::Baseline {
-            sha256: baseline.stdout_sha256.clone(),
-        },
+        None => Oracle::of(&baseline),
     };
     emit(Event::Baseline(measured(&baseline)));
+    if baseline.exit_code != 0 {
+        let n = format!(
+            "the original exits with status {}; candidates must exit the same way",
+            baseline.exit_code
+        );
+        emit(Event::Note(n.clone()));
+        notes.push(n);
+    }
+    let too_fast = baseline.median_ns < cfg.min_baseline_ns;
+    if too_fast {
+        let n = format!(
+            "too fast to measure reliably: the original runs in {} per rep, under the {} \
+             floor where run-to-run noise rivals the {:.0}% margin; keeping the original",
+            crate::ui::dur(baseline.median_ns),
+            crate::ui::dur(cfg.min_baseline_ns),
+            cfg.margin * 100.0
+        );
+        emit(Event::Note(n.clone()));
+        notes.push(n);
+    }
 
     let base_reward = reward(&baseline, &baseline, 0, cfg.token_budget).value;
     let mut elite = Elite {
@@ -329,15 +433,25 @@ pub fn optimize(
     let mut stale = 0usize;
     let mut stop_reason = format!("reached --gens {}", cfg.gens);
     let slots = cfg.pop.saturating_sub(1).max(1);
+    if too_fast {
+        stop_reason = format!(
+            "too fast to measure: baseline median {} is under {}",
+            crate::ui::dur(baseline.median_ns),
+            crate::ui::dur(cfg.min_baseline_ns)
+        );
+    }
 
-    for gen in 1..=cfg.gens {
+    for gen in (1..=cfg.gens).take_while(|_| !too_fast) {
         if cancel.load(Ordering::SeqCst) {
             stop_reason = "cancelled".into();
             break;
         }
+        let t = Instant::now();
         let proposals = proposer.propose(&elite.source);
+        propose_ns += t.elapsed().as_nanos() as u64;
         for note in proposer.take_notes() {
-            emit(Event::Note(note));
+            emit(Event::Note(note.clone()));
+            notes.push(note);
         }
         let mut batch: Vec<Candidate> = Vec::new();
         for cand in proposals {
@@ -388,8 +502,10 @@ pub fn optimize(
             };
             let detail = if out.timed_out {
                 Some("wall-clock timeout".to_string())
-            } else {
+            } else if out.error.is_some() {
                 out.error.clone()
+            } else {
+                oracle.mismatch(&out).map(str::to_string)
             };
             let rec = CandidateRecord {
                 gen,
@@ -460,7 +576,16 @@ pub fn optimize(
     emit(Event::Stop(stop_reason.clone()));
 
     let mut confirmation = None;
-    let best = if elite.origin == "baseline" {
+    let best = if too_fast {
+        Best {
+            origin: "baseline".into(),
+            median_ns: baseline.median_ns,
+            peak_rss_kb: baseline.peak_rss_kb,
+            speedup: 1.0,
+            confirmed: false,
+            reason: "too fast to measure reliably; the original is kept".into(),
+        }
+    } else if elite.origin == "baseline" {
         Best {
             origin: "baseline".into(),
             median_ns: baseline.median_ns,
@@ -487,7 +612,10 @@ pub fn optimize(
                 peak_rss_kb: elite.outcome.peak_rss_kb,
                 speedup: c.speedup,
                 confirmed: true,
-                reason: "confirmed by an interleaved re-run".into(),
+                reason: format!(
+                    "confirmed by an interleaved re-run ({}/{} rounds won, {} hash seeds)",
+                    c.candidate_wins, c.rounds, c.rounds
+                ),
             }
         } else {
             Best {
@@ -520,6 +648,7 @@ pub fn optimize(
         sandbox: runner.name().to_string(),
         proposer: proposer.name(),
         config: cfg.clone(),
+        run: cfg.info.clone(),
         baseline: measured(&baseline),
         candidates: records,
         generations,
@@ -527,11 +656,21 @@ pub fn optimize(
         confirmation,
         best,
         best_source,
+        notes,
+        timings: Timings {
+            propose_ns,
+            search_ns: started.elapsed().as_nanos() as u64,
+            ..Timings::default()
+        },
     })
 }
 
 /// Re-measure baseline and elite interleaved (B, C, B, C, ...) in fresh
-/// sandboxes, one timed rep each, for `2 * reps` rounds.
+/// sandboxes, one timed rep each, for `2 * reps` rounds. Round `i` runs both
+/// with `PYTHONHASHSEED=i+1`, and their stdout, stderr and exit code must
+/// agree under every seed, which catches rewrites whose output depends on set
+/// or dict-of-set iteration order. The candidate must also clear the margin
+/// on the medians and win at least [`PAIRED_WIN_FRACTION`] of the rounds.
 fn confirm(
     source: &str,
     elite: &Elite,
@@ -548,15 +687,18 @@ fn confirm(
     });
     let mut bt = Vec::with_capacity(rounds);
     let mut ct = Vec::with_capacity(rounds);
+    let mut seeds = Vec::with_capacity(rounds);
     let mut oracle_ok = true;
     let mut detail = None;
+    let mut wins = 0usize;
     for round in 0..rounds {
         if cancel.load(Ordering::SeqCst) {
             detail = Some("cancelled".to_string());
             break;
         }
-        let b = runner.run(source, 1);
-        let c = runner.run(&elite.source, 1);
+        let seed = round as u32 + 1;
+        let b = runner.run_seeded(source, 1, seed);
+        let c = runner.run_seeded(&elite.source, 1, seed);
         if !b.ok() || !c.ok() {
             detail = Some(format!(
                 "a confirmation run failed (baseline: {:?}, candidate: {:?})",
@@ -564,7 +706,21 @@ fn confirm(
             ));
             break;
         }
-        oracle_ok &= oracle.matches(&c);
+        // Same behaviour as the baseline under this seed; with --check the
+        // candidate must also still match the expected output.
+        let agrees = same_behaviour(&b, &c)
+            && (matches!(oracle, Oracle::Baseline { .. }) || oracle.matches(&c));
+        if !agrees && oracle_ok {
+            detail = Some(format!(
+                "output differed from the original with PYTHONHASHSEED={seed} (it depends on \
+                 hash or iteration order)"
+            ));
+        }
+        oracle_ok &= agrees;
+        seeds.push(seed);
+        if c.times_ns[0] < b.times_ns[0] {
+            wins += 1;
+        }
         bt.push(b.times_ns[0]);
         ct.push(c.times_ns[0]);
         emit(Event::ConfirmRound {
@@ -574,16 +730,21 @@ fn confirm(
     }
     let bm = median(&bt);
     let cm = median(&ct);
-    let complete = detail.is_none();
+    let complete = bt.len() == rounds;
+    let need = (PAIRED_WIN_FRACTION * rounds as f64).ceil() as usize;
     let fast = complete && score::clears_margin(bm, cm, cfg.margin);
-    if complete && !oracle_ok {
-        detail = Some("output differed during confirmation".into());
-    } else if complete && !fast {
+    let consistent = wins >= need;
+    if complete && oracle_ok && !fast {
         detail = Some(format!(
-            "median {:.1} ms vs baseline {:.1} ms is under the {:.0}% margin",
-            cm as f64 / 1e6,
-            bm as f64 / 1e6,
+            "median {} vs baseline {} is under the {:.0}% margin",
+            crate::ui::dur(cm),
+            crate::ui::dur(bm),
             cfg.margin * 100.0
+        ));
+    } else if complete && oracle_ok && !consistent {
+        detail = Some(format!(
+            "faster in only {wins} of {rounds} paired rounds (needs {need}); the difference \
+             is within run-to-run noise"
         ));
     }
     let c = Confirmation {
@@ -594,8 +755,10 @@ fn confirm(
         baseline_median_ns: bm,
         candidate_median_ns: cm,
         speedup: if cm > 0 { bm as f64 / cm as f64 } else { 0.0 },
+        candidate_wins: wins,
+        seeds,
         oracle_ok,
-        passed: complete && oracle_ok && fast,
+        passed: complete && oracle_ok && fast && consistent,
         detail,
     };
     emit(Event::Confirm(c.clone()));

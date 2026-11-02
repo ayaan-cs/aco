@@ -5,7 +5,7 @@
 use std::time::Duration;
 
 use aco::runner::unshare::userns_unavailable;
-use aco::runner::{DockerRunner, Limits, Runner, UnshareRunner};
+use aco::runner::{DockerRunner, Limits, Outcome, Runner, UnshareRunner};
 use aco::score::{judge, Decision, Oracle};
 
 const SENTINEL: &str = "ACO_SENTINEL_9F3A";
@@ -107,9 +107,7 @@ fn network_is_unreachable(r: &dyn Runner) {
 fn spin_loop_times_out(r: &dyn Runner) {
     let o = r.run("while True:\n    pass\n", 1);
     assert!(o.timed_out, "{o:?}");
-    let oracle = Oracle::Baseline {
-        sha256: String::new(),
-    };
+    let oracle = Oracle::of(&Outcome::default());
     assert_eq!(
         judge(1_000_000_000, &oracle, &o, 0.05),
         Decision::RejectTimeout

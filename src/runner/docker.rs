@@ -3,14 +3,20 @@
 //! Calls the `docker` binary with a fixed argument list (no shell): no network,
 //! read-only root, all capabilities dropped, no-new-privileges, pid, memory and
 //! CPU limits, the `nobody` user, a tmpfs `/tmp`, and the harness plus
-//! candidate bind-mounted read-only at `/work`. No host environment is passed.
+//! candidate bind-mounted read-only at `/work`, the project snapshot at
+//! `/proj` with the candidate mounted over the file it replaces. No host
+//! environment is passed; only a fixed hash seed and thread-count variables.
 //! One container runs all reps for a candidate, so startup is never timed.
 
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
-use super::{parse_outcome, run_captured, Limits, Outcome, Runner, WorkDir};
+use super::{
+    parse_outcome, run_captured, sandbox_env, Backend, Limits, Outcome, RunCtx, Runner, WorkDir,
+    PROJ, WORK,
+};
+use crate::deps::{Installed, Requirements};
 
 const IMAGE_PIN: &str = include_str!("../../sandbox/image.txt");
 
@@ -76,7 +82,16 @@ impl DockerRunner {
         Ok(())
     }
 
-    fn args(&self, name: &str, files: &str, reps: usize, nonce: &str) -> Vec<String> {
+    #[allow(clippy::too_many_arguments)]
+    fn args(
+        &self,
+        name: &str,
+        files: &str,
+        project: &str,
+        overlay: Option<&str>,
+        image: &str,
+        seed: u32,
+    ) -> Vec<String> {
         let l = &self.limits;
         let mut a: Vec<String> = [
             "run",
@@ -114,36 +129,54 @@ impl DockerRunner {
             "--ulimit".into(),
             format!("cpu={0}:{0}", l.cpu_secs()),
             "--mount".into(),
-            format!("type=bind,source={files},target=/work,readonly"),
-            self.image.clone(),
+            format!("type=bind,source={files},target={WORK},readonly"),
+            "--mount".into(),
+            format!("type=bind,source={project},target={PROJ},readonly"),
+        ]);
+        if let Some(rel) = overlay {
+            a.extend([
+                "--mount".into(),
+                format!("type=bind,source={files}/candidate.py,target={PROJ}/{rel},readonly"),
+            ]);
+        }
+        // Only these variables are set; nothing from the host is passed.
+        for (k, v) in sandbox_env(seed) {
+            a.extend(["--env".into(), format!("{k}={v}")]);
+        }
+        a.extend([
+            image.to_string(),
             "python3".into(),
-            "-I".into(),
+            "-s".into(),
             "-B".into(),
-            "/work/harness.py".into(),
-            "/work/candidate.py".into(),
-            reps.to_string(),
-            l.warmup.to_string(),
-            nonce.into(),
+            format!("{WORK}/harness.py"),
+            format!("{WORK}/run.json"),
         ]);
         a
     }
 }
 
-impl Runner for DockerRunner {
+impl Backend for DockerRunner {
     fn name(&self) -> &'static str {
         "docker"
     }
 
-    fn run(&self, source: &str, reps: usize) -> Outcome {
-        let wd = match WorkDir::new(source) {
+    fn exec(&self, ctx: &RunCtx, source: &str, reps: usize, seed: u32) -> Outcome {
+        let nonce = super::nonce();
+        let image = ctx.deps.docker_image.as_deref().unwrap_or(&self.image);
+        let deps = ctx
+            .deps
+            .docker_image
+            .as_ref()
+            .map(|_| crate::deps::DOCKER_DEPS_DIR);
+        let wd = match WorkDir::new(source, ctx, reps, self.limits.warmup, &nonce, deps) {
             Ok(w) => w,
             Err(e) => return Outcome::failed(format!("could not create work dir: {e}")),
         };
-        let nonce = super::nonce();
         let name = format!("aco-{nonce}");
         let files = wd.files().to_string_lossy().to_string();
+        let project = wd.project(ctx).to_string_lossy().to_string();
         let mut cmd = Command::new(&self.bin);
-        cmd.args(self.args(&name, &files, reps, &nonce));
+        cmd.args(self.args(&name, &files, &project, wd.overlay(ctx), image, seed));
         let kill = || {
             let _ = Command::new(&self.bin)
                 .args(["kill", &name])
@@ -155,6 +188,22 @@ impl Runner for DockerRunner {
             Ok(c) => parse_outcome(&c, &nonce),
             Err(e) => Outcome::failed(format!("could not start docker: {e}")),
         }
+    }
+
+    fn prepare_deps(&self, reqs: &Requirements) -> Result<Installed, String> {
+        crate::deps::install_docker(&self.bin, &self.image, reqs)
+    }
+}
+
+impl Runner for DockerRunner {
+    fn name(&self) -> &'static str {
+        "docker"
+    }
+    fn run(&self, source: &str, reps: usize) -> Outcome {
+        self.exec(&RunCtx::default(), source, reps, 0)
+    }
+    fn run_seeded(&self, source: &str, reps: usize, seed: u32) -> Outcome {
+        self.exec(&RunCtx::default(), source, reps, seed)
     }
 }
 
@@ -172,7 +221,16 @@ mod tests {
     #[test]
     fn argument_list_keeps_every_isolation_flag() {
         let d = DockerRunner::new(Limits::default());
-        let a = d.args("aco-x", "/tmp/aco-x/files", 5, "n").join(" ");
+        let a = d
+            .args(
+                "aco-x",
+                "/tmp/aco-x/files",
+                "/tmp/snap",
+                Some("pkg/mod.py"),
+                &d.image,
+                7,
+            )
+            .join(" ");
         for flag in [
             "--network none",
             "--read-only",
@@ -183,9 +241,22 @@ mod tests {
             "--memory 1024m",
             "--cpus 1",
             "target=/work,readonly",
+            "target=/proj,readonly",
+            "source=/tmp/aco-x/files/candidate.py,target=/proj/pkg/mod.py,readonly",
+            "--env PYTHONHASHSEED=7",
         ] {
             assert!(a.contains(flag), "missing {flag} in {a}");
         }
-        assert!(!a.contains("--env"), "no host env may be passed");
+        // Only the fixed sandbox variables are set, never host values.
+        let envs: Vec<&str> = a
+            .split(" --env ")
+            .skip(1)
+            .map(|s| s.split(' ').next().unwrap())
+            .collect();
+        assert!(
+            envs.iter()
+                .all(|e| e.starts_with("PYTHONHASHSEED=") || e.ends_with("_THREADS=1")),
+            "{envs:?}"
+        );
     }
 }

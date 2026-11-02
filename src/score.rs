@@ -19,22 +19,70 @@ pub fn median(values: &[u64]) -> u64 {
     }
 }
 
-/// What a candidate's output must equal.
+/// What a candidate's observable behaviour must equal.
 #[derive(Clone, Debug)]
 pub enum Oracle {
-    /// The baseline's stdout hash.
-    Baseline { sha256: String },
-    /// A user-supplied `--check` file, compared exactly.
-    Expected { stdout: String },
+    /// The baseline's stdout and stderr (by hash) and exit code.
+    Baseline {
+        sha256: String,
+        stderr_sha256: String,
+        exit_code: i64,
+    },
+    /// A user-supplied `--check` file, compared exactly, plus the baseline's
+    /// exit code.
+    Expected { stdout: String, exit_code: i64 },
 }
 
 impl Oracle {
-    pub fn matches(&self, o: &Outcome) -> bool {
-        match self {
-            Oracle::Baseline { sha256 } => &o.stdout_sha256 == sha256,
-            Oracle::Expected { stdout } => !o.stdout_truncated && &o.stdout == stdout,
+    /// The oracle a baseline run defines.
+    pub fn of(baseline: &Outcome) -> Self {
+        Oracle::Baseline {
+            sha256: baseline.stdout_sha256.clone(),
+            stderr_sha256: baseline.stderr_sha256.clone(),
+            exit_code: baseline.exit_code,
         }
     }
+
+    pub fn matches(&self, o: &Outcome) -> bool {
+        self.mismatch(o).is_none()
+    }
+
+    /// Which observable differs, if any.
+    pub fn mismatch(&self, o: &Outcome) -> Option<&'static str> {
+        match self {
+            Oracle::Baseline {
+                sha256,
+                stderr_sha256,
+                exit_code,
+            } => {
+                if &o.stdout_sha256 != sha256 {
+                    Some("stdout differs")
+                } else if &o.stderr_sha256 != stderr_sha256 {
+                    Some("stderr differs")
+                } else if o.exit_code != *exit_code {
+                    Some("exit code differs")
+                } else {
+                    None
+                }
+            }
+            Oracle::Expected { stdout, exit_code } => {
+                if o.stdout_truncated || &o.stdout != stdout {
+                    Some("stdout differs from --check")
+                } else if o.exit_code != *exit_code {
+                    Some("exit code differs")
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
+/// True when two runs behaved the same (stdout, stderr, exit code).
+pub fn same_behaviour(a: &Outcome, b: &Outcome) -> bool {
+    a.stdout_sha256 == b.stdout_sha256
+        && a.stderr_sha256 == b.stderr_sha256
+        && a.exit_code == b.exit_code
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -129,7 +177,7 @@ mod tests {
 
     #[test]
     fn gate_requires_oracle_and_margin() {
-        let o = Oracle::Baseline { sha256: "a".into() };
+        let o = Oracle::of(&out(1, "a"));
         assert_eq!(judge(100, &o, &out(95, "a"), 0.05), Decision::Keep);
         assert_eq!(judge(100, &o, &out(96, "a"), 0.05), Decision::RejectMargin);
         assert_eq!(judge(100, &o, &out(10, "b"), 0.05), Decision::RejectOracle);
@@ -140,6 +188,13 @@ mod tests {
             judge(100, &o, &Outcome::failed("boom"), 0.05),
             Decision::RejectError
         );
+        // stderr and the exit code are part of the behaviour.
+        let mut e = out(10, "a");
+        e.stderr_sha256 = "warn".into();
+        assert_eq!(o.mismatch(&e), Some("stderr differs"));
+        let mut x = out(10, "a");
+        x.exit_code = 3;
+        assert_eq!(judge(100, &o, &x, 0.05), Decision::RejectOracle);
     }
 
     #[test]
